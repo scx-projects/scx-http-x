@@ -80,4 +80,21 @@ public final class HttpClientOptions {
         return this;
     }
 
+    // ******************** 简易操作 **********************
+
+    public HttpClientOptions maxStatusLineSize(int maxStatusLineSize) {
+        this.http1ClientConnectionOptions.maxStatusLineSize(maxStatusLineSize);
+        return this;
+    }
+
+    public HttpClientOptions maxHeaderSize(int maxHeaderSize) {
+        this.http1ClientConnectionOptions.maxHeaderSize(maxHeaderSize);
+        return this;
+    }
+
+    public HttpClientOptions maxPayloadSize(int maxPayloadSize) {
+        this.http1ClientConnectionOptions.maxPayloadSize(maxPayloadSize);
+        return this;
+    }
+
 }

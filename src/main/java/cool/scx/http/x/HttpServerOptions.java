@@ -1,9 +1,12 @@
 package cool.scx.http.x;
 
 import cool.scx.http.x.http1.Http1ServerConnectionOptions;
+import cool.scx.http.x.http1.Http1UpgradeHandler;
 import cool.scx.http.x.http2.Http2ServerConnectionOptions;
 import cool.scx.tcp.TCPServerOptions;
 import cool.scx.tcp.tls.TLS;
+
+import java.util.List;
 
 /// Http 服务器配置
 ///
@@ -70,6 +73,43 @@ public final class HttpServerOptions {
 
     public HttpServerOptions tls(TLS tls) {
         this.tls = tls;
+        return this;
+    }
+
+    // ******************** 简易操作 **********************
+
+    public HttpServerOptions maxRequestLineSize(int maxRequestLineSize) {
+        this.http1ServerConnectionOptions.maxRequestLineSize(maxRequestLineSize);
+        return this;
+    }
+
+    public HttpServerOptions maxHeaderSize(int maxHeaderSize) {
+        this.http1ServerConnectionOptions.maxHeaderSize(maxHeaderSize);
+        return this;
+    }
+
+    public HttpServerOptions maxPayloadSize(long maxPayloadSize) {
+        this.http1ServerConnectionOptions.maxPayloadSize(maxPayloadSize);
+        return this;
+    }
+
+    public HttpServerOptions autoRespond100Continue(boolean autoRespond100Continue) {
+        this.http1ServerConnectionOptions.autoRespond100Continue(autoRespond100Continue);
+        return this;
+    }
+
+    public HttpServerOptions validateHost(boolean validateHost) {
+        this.http1ServerConnectionOptions.validateHost(validateHost);
+        return this;
+    }
+
+    public HttpServerOptions upgradeHandlerList(List<Http1UpgradeHandler<?>> upgradeHandlerList) {
+        this.http1ServerConnectionOptions.upgradeHandlerList(upgradeHandlerList);
+        return this;
+    }
+
+    public HttpServerOptions addUpgradeHandler(Http1UpgradeHandler<?>... upgradeHandlerList) {
+        this.http1ServerConnectionOptions.addUpgradeHandler(upgradeHandlerList);
         return this;
     }
 
