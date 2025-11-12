@@ -1,7 +1,6 @@
 package cool.scx.http.x.http1;
 
 import cool.scx.http.ScxHttpServerRequest;
-import cool.scx.http.body.DefaultHttpBody;
 import cool.scx.http.body.ScxHttpBody;
 import cool.scx.http.method.ScxHttpMethod;
 import cool.scx.http.peer_info.PeerInfo;
@@ -37,7 +36,7 @@ public class Http1ServerRequest implements ScxHttpServerRequest {
         this.uri = inferURI(requestLine.requestTarget(), headers, connection.tcpSocket);
         this.version = requestLine.httpVersion();
         this.headers = headers;
-        this.body = new DefaultHttpBody(bodyByteInput, this.headers);
+        this.body = new Http1Body(bodyByteInput, this.headers);
         this.remotePeer = getRemotePeer(connection.tcpSocket);
         this.localPeer = getLocalPeer(connection.tcpSocket);
         this.response = new Http1ServerResponse(connection, this);

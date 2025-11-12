@@ -27,7 +27,6 @@ import static cool.scx.http.error_handler.DefaultHttpServerErrorHandler.DEFAULT_
 import static cool.scx.http.error_handler.ErrorPhase.SYSTEM;
 import static cool.scx.http.error_handler.ErrorPhase.USER;
 import static cool.scx.http.error_handler.ErrorPhaseHelper.getErrorPhaseStr;
-import static cool.scx.http.media.multi_part.MultiPartStream.consumeByteInput;
 import static cool.scx.http.x.http1.Http1Helper.*;
 import static cool.scx.http.x.http1.Http1Reader.*;
 import static cool.scx.http.x.http1.headers.connection.Connection.CLOSE;
@@ -95,7 +94,7 @@ public class Http1ServerConnection {
                 // 6, 如果 还是 running 说明需要继续复用当前 tcp 连接,并进行下一次 Request 的读取
                 if (running) {
                     // 7, 用户处理器可能没有消费完请求体 这里我们帮助消费用户未消费的数据
-                    consumeByteInput(request.body().byteInput());
+                    consumeBodyByteInput(request.body().byteInput());
                 }
             }
 

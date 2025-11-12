@@ -29,7 +29,7 @@ import static cool.scx.http.x.http1.headers.transfer_encoding.TransferEncoding.C
 
 public class Http1ReaderTest {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws NoMoreDataException {
         test1();
         test2();
         test3();

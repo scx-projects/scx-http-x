@@ -94,7 +94,7 @@
     <properties>
 
         <!-- *********************** 以下为依赖包版本 *********************** -->
-        <scx-http.version>3.9.5</scx-http.version>
+        <scx-http.version>3.9.6</scx-http.version>
         <scx-tcp.version>4.3.0</scx-tcp.version>
         <testng.version>7.11.0</testng.version>
 
