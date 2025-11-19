@@ -1,8 +1,7 @@
 package cool.scx.http.x.http1.byte_output;
 
-import cool.scx.http.sender.ScxHttpSenderStatus;
+import cool.scx.function.Function0Void;
 import cool.scx.http.x.http1.Http1ServerConnection;
-import cool.scx.http.x.http1.Http1ServerResponse;
 import cool.scx.io.ByteChunk;
 import cool.scx.io.ByteOutput;
 import cool.scx.io.exception.AlreadyClosedException;
@@ -18,13 +17,13 @@ public class Http1ServerResponseByteOutput implements ByteOutput {
 
     private final Http1ServerConnection connection;
     private final boolean closeConnection;
-    private final Http1ServerResponse http1ServerResponse;
+    private final Function0Void<RuntimeException> onClose;
     private boolean closed;
 
-    public Http1ServerResponseByteOutput(Http1ServerConnection connection, boolean closeConnection, Http1ServerResponse http1ServerResponse) {
+    public Http1ServerResponseByteOutput(Http1ServerConnection connection, boolean closeConnection, Function0Void<RuntimeException> onClose) {
         this.connection = connection;
         this.closeConnection = closeConnection;
-        this.http1ServerResponse = http1ServerResponse;
+        this.onClose = onClose;
         this.closed = false;
     }
 
@@ -74,7 +73,7 @@ public class Http1ServerResponseByteOutput implements ByteOutput {
         }
 
         closed = true;
-        http1ServerResponse.senderStatus = ScxHttpSenderStatus.SENT;
+        onClose.apply();
 
     }
 

@@ -19,7 +19,10 @@ import cool.scx.io.ByteOutput;
 import cool.scx.io.exception.AlreadyClosedException;
 import cool.scx.io.exception.ScxIOException;
 
-import static cool.scx.http.sender.ScxHttpSenderStatus.*;
+import java.util.concurrent.locks.ReentrantLock;
+
+import static cool.scx.http.sender.ScxHttpSenderStatus.NOT_SENT;
+import static cool.scx.http.sender.ScxHttpSenderStatus.SENT;
 import static cool.scx.http.x.http1.Http1Helper.checkResponseHasBody;
 import static cool.scx.http.x.http1.headers.connection.Connection.CLOSE;
 import static cool.scx.http.x.http1.headers.connection.Connection.KEEP_ALIVE;
@@ -35,15 +38,18 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
     public final Http1ServerConnection connection;
 
     private final Http1ServerRequest request;
-    public ScxHttpSenderStatus senderStatus;
+    private final ReentrantLock sendLock;
+
     private ScxHttpStatusCode statusCode;
     private Http1Headers headers;
     private String reasonPhrase;
     private ByteOutput byteOutput;
+    private ScxHttpSenderStatus senderStatus;
 
     Http1ServerResponse(Http1ServerConnection connection, Http1ServerRequest request) {
         this.connection = connection;
         this.request = request;
+        this.sendLock = new ReentrantLock();
         this.statusCode = HttpStatusCode.OK;
         this.headers = new Http1Headers();
         this.reasonPhrase = null;
@@ -87,8 +93,8 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
         return this;
     }
 
-    @Override
-    public Void send(MediaWriter mediaWriter) throws IllegalSenderStateException, HttpSendException {
+    private Void send0(MediaWriter mediaWriter) throws IllegalSenderStateException, HttpSendException {
+
         // 检查发送状态
         if (senderStatus != NOT_SENT) {
             throw new IllegalSenderStateException(senderStatus);
@@ -104,6 +110,16 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
         }
 
         return null;
+    }
+
+    @Override
+    public Void send(MediaWriter mediaWriter) throws IllegalSenderStateException, HttpSendException {
+        sendLock.lock();
+        try {
+            return send0(mediaWriter);
+        } finally {
+            sendLock.unlock();
+        }
     }
 
     @Override
@@ -179,7 +195,7 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
         var useChunkedTransfer = headers.transferEncoding() == CHUNKED;
 
         // 创建 基本 输出流
-        var baseByteOutput = new Http1ServerResponseByteOutput(connection, closeConnection, this);
+        var baseByteOutput = new Http1ServerResponseByteOutput(connection, closeConnection, () -> this.senderStatus = SENT);
 
         // 判断是否采用分块传输
         return useChunkedTransfer ?
