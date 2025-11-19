@@ -9,7 +9,9 @@ import cool.scx.http.peer_info.PeerInfo;
 import cool.scx.http.uri.ScxURI;
 import cool.scx.http.version.HttpVersion;
 
-// todo 待实现
+import static cool.scx.http.version.HttpVersion.HTTP_3;
+
+// 待实现
 public class Http3ServerRequest implements ScxHttpServerRequest {
 
     @Override
@@ -29,7 +31,7 @@ public class Http3ServerRequest implements ScxHttpServerRequest {
 
     @Override
     public HttpVersion version() {
-        return null;
+        return HTTP_3;
     }
 
     @Override
