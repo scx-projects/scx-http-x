@@ -8,7 +8,7 @@ import cool.scx.http.version.HttpVersion;
 
 import static cool.scx.http.version.HttpVersion.HTTP_2;
 
-// todo 待完成
+// 待完成
 public class Http2ClientResponse implements ScxHttpClientResponse {
 
     @Override

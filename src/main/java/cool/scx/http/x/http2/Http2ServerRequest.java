@@ -9,7 +9,7 @@ import cool.scx.http.peer_info.PeerInfo;
 import cool.scx.http.uri.ScxURI;
 import cool.scx.http.version.HttpVersion;
 
-// todo 待实现
+// 待实现
 public class Http2ServerRequest implements ScxHttpServerRequest {
 
     @Override
