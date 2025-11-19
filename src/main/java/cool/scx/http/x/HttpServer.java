@@ -82,6 +82,9 @@ public final class HttpServer implements ScxHttpServer {
             // start 为阻塞方法
             new Http1ServerConnection(tcpSocket, options.http1ServerConnectionOptions(), requestHandler, errorHandler).start();
         }
+
+        // 4, todo 这里用不用防御式 关闭 tcpSocket ? start 中一定是同步的吗?
+
     }
 
     @Override
