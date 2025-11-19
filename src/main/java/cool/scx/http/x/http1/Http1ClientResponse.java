@@ -4,9 +4,12 @@ import cool.scx.http.ScxHttpClientResponse;
 import cool.scx.http.body.ScxHttpBody;
 import cool.scx.http.headers.ScxHttpHeaders;
 import cool.scx.http.status_code.ScxHttpStatusCode;
+import cool.scx.http.version.HttpVersion;
 import cool.scx.http.x.http1.headers.Http1Headers;
 import cool.scx.http.x.http1.status_line.Http1StatusLine;
 import cool.scx.io.ByteInput;
+
+import static cool.scx.http.version.HttpVersion.HTTP_1_1;
 
 /// HTTP/1.1 ClientResponse
 ///
@@ -27,6 +30,11 @@ public class Http1ClientResponse implements ScxHttpClientResponse {
     @Override
     public ScxHttpStatusCode statusCode() {
         return statusLine.statusCode();
+    }
+
+    @Override
+    public HttpVersion version() {
+        return HTTP_1_1;
     }
 
     public String reasonPhrase() {
