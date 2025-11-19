@@ -19,10 +19,10 @@ import cool.scx.io.ByteOutput;
 import cool.scx.io.exception.AlreadyClosedException;
 import cool.scx.io.exception.ScxIOException;
 
+import java.io.IOException;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static cool.scx.http.sender.ScxHttpSenderStatus.NOT_SENT;
-import static cool.scx.http.sender.ScxHttpSenderStatus.SENT;
+import static cool.scx.http.sender.ScxHttpSenderStatus.*;
 import static cool.scx.http.x.http1.Http1Helper.checkResponseHasBody;
 import static cool.scx.http.x.http1.headers.connection.Connection.CLOSE;
 import static cool.scx.http.x.http1.headers.connection.Connection.KEEP_ALIVE;
@@ -98,11 +98,37 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
             throw new IllegalSenderStateException(senderStatus);
         }
 
+        // 处理 headers 以及获取 请求长度
         var expectedLength = mediaWriter.beforeWrite(headers, request.headers());
+
+        // 发送头过程中出现错误 应该立即关闭连接
+        ByteOutput byteOutput;
         try {
-            mediaWriter.write(sendHeaders(expectedLength));
+            byteOutput = sendHeaders(expectedLength);
+        } catch (ScxIOException | AlreadyClosedException e) {
+            // 标记发送失败
+            senderStatus = FAILED;
+            // 关闭底层连接
+            try {
+                connection.close();
+            } catch (IOException ex) {
+                e.addSuppressed(ex);
+            }
+            throw new HttpSendException("发送 HTTP 响应头失败 !!!", e);
+        }
+
+        try {
+            mediaWriter.write(byteOutput);
         } catch (ScxIOException e) {
-            throw new HttpSendException("发送 HTTP 响应失败 !!!", e);
+            // 标记发送失败
+            senderStatus = FAILED;
+            // 关闭底层连接
+            try {
+                connection.close();
+            } catch (IOException ex) {
+                e.addSuppressed(ex);
+            }
+            throw new HttpSendException("发送 HTTP 响应体失败 !!!", e);
         } catch (AlreadyClosedException e) {
             throw new IllegalSenderStateException(senderStatus);
         }
@@ -129,7 +155,7 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
         return reasonPhrase != null ? reasonPhrase : ScxHttpStatusCodeHelper.getReasonPhrase(statusCode, "unknown");
     }
 
-    private ByteOutput sendHeaders(long expectedLength) {
+    private ByteOutput sendHeaders(long expectedLength) throws ScxIOException, AlreadyClosedException {
         // 1, 创建 响应行
         var statusLine = new Http1StatusLine(request.version(), statusCode, getReasonPhrase());
 
@@ -186,7 +212,7 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
         var useChunkedTransfer = headers.transferEncoding() == CHUNKED;
 
         // 创建 基本 输出流
-        var baseByteOutput = new Http1ServerResponseByteOutput(connection, closeConnection, () -> this.senderStatus = SENT);
+        var baseByteOutput = new Http1ServerResponseByteOutput(connection, closeConnection, () -> this.senderStatus = SUCCESS);
 
         // 判断是否采用分块传输
         return useChunkedTransfer ?
