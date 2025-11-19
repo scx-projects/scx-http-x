@@ -9,7 +9,10 @@ import cool.scx.http.x.http1.byte_output.Http1ClientRequestByteOutput;
 import cool.scx.http.x.http1.byte_output.HttpChunkedByteOutput;
 import cool.scx.http.x.http1.headers.Http1Headers;
 import cool.scx.http.x.http1.request_line.Http1RequestLine;
-import cool.scx.io.*;
+import cool.scx.io.ByteInput;
+import cool.scx.io.ByteOutput;
+import cool.scx.io.DefaultByteInput;
+import cool.scx.io.ScxIO;
 import cool.scx.tcp.ScxTCPSocket;
 
 import java.io.IOException;
@@ -40,13 +43,7 @@ public class Http1ClientConnection {
         this.options = options;
     }
 
-    public Http1ClientConnection sendRequest(HttpClientRequest request, MediaWriter writer) throws IOException {
-        // 复制一份头便于修改
-        var headers = new Http1Headers(request.headers());
-
-        // 让用户设置头信息
-        var expectedLength = writer.beforeWrite(headers, ScxHttpHeaders.of());
-
+    private ByteOutput sendHeaders(long expectedLength, HttpClientRequest request, Http1Headers headers) {
         // 1, 创建 请求行
         var requestLine = new Http1RequestLine(request.method(), request.uri());
 
@@ -99,15 +96,26 @@ public class Http1ClientConnection {
         // 只有明确表示 分块的时候才使用分块
         var useChunkedTransfer = headers.transferEncoding() == CHUNKED;
 
-        // 这里需要做一个 close 的中断传递. 防止用户意外关闭底层
-        var baseByteOutput = new Http1ClientRequestByteOutput(dataWriter,request);
+        // 创建 基本 输出流
+        var baseByteOutput = new Http1ClientRequestByteOutput(dataWriter, () -> request.senderStatus = ScxHttpSenderStatus.SUCCESS);
 
-        var finalByteOutput = useChunkedTransfer ?
+        return useChunkedTransfer ?
             new HttpChunkedByteOutput(baseByteOutput) :
             new ContentLengthByteOutput(baseByteOutput, expectedLength);
+    }
+
+    public Http1ClientConnection sendRequest(HttpClientRequest request, MediaWriter writer) throws IOException {
+        // 复制一份头
+        var headers = new Http1Headers(request.headers());
+
+        // 处理 headers 以及获取 请求长度
+        var expectedLength = writer.beforeWrite(headers, ScxHttpHeaders.of());
+
+        // 发送头
+        var byteOutput = sendHeaders(expectedLength, request, headers);
 
         // 调用处理器
-        writer.write(finalByteOutput);
+        writer.write(byteOutput);
 
         return this;
     }
