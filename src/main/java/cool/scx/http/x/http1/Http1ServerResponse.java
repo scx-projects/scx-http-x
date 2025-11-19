@@ -4,11 +4,13 @@ import cool.scx.http.ScxHttpServerRequest;
 import cool.scx.http.ScxHttpServerResponse;
 import cool.scx.http.headers.ScxHttpHeaders;
 import cool.scx.http.media.MediaWriter;
-import cool.scx.http.sender.BodyAlreadySentException;
 import cool.scx.http.sender.HttpSendException;
+import cool.scx.http.sender.IllegalSenderStateException;
+import cool.scx.http.sender.ScxHttpSenderStatus;
 import cool.scx.http.status_code.HttpStatusCode;
 import cool.scx.http.status_code.ScxHttpStatusCode;
 import cool.scx.http.status_code.ScxHttpStatusCodeHelper;
+import cool.scx.http.x.http1.byte_output.ContentLengthByteOutput;
 import cool.scx.http.x.http1.byte_output.Http1ServerResponseByteOutput;
 import cool.scx.http.x.http1.byte_output.HttpChunkedByteOutput;
 import cool.scx.http.x.http1.headers.Http1Headers;
@@ -17,6 +19,7 @@ import cool.scx.io.ByteOutput;
 import cool.scx.io.exception.AlreadyClosedException;
 import cool.scx.io.exception.ScxIOException;
 
+import static cool.scx.http.sender.ScxHttpSenderStatus.*;
 import static cool.scx.http.x.http1.Http1Helper.checkResponseHasBody;
 import static cool.scx.http.x.http1.headers.connection.Connection.CLOSE;
 import static cool.scx.http.x.http1.headers.connection.Connection.KEEP_ALIVE;
@@ -32,6 +35,7 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
     public final Http1ServerConnection connection;
 
     private final Http1ServerRequest request;
+    public ScxHttpSenderStatus senderStatus;
     private ScxHttpStatusCode statusCode;
     private Http1Headers headers;
     private String reasonPhrase;
@@ -42,6 +46,9 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
         this.request = request;
         this.statusCode = HttpStatusCode.OK;
         this.headers = new Http1Headers();
+        this.reasonPhrase = null;
+        this.byteOutput = null;
+        this.senderStatus = NOT_SENT;
     }
 
     @Override
@@ -81,24 +88,27 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
     }
 
     @Override
-    public Void send(MediaWriter mediaWriter) throws BodyAlreadySentException {
+    public Void send(MediaWriter mediaWriter) throws IllegalSenderStateException, HttpSendException {
+        // 检查发送状态
+        if (senderStatus != NOT_SENT) {
+            throw new IllegalSenderStateException(senderStatus);
+        }
+
         var expectedLength = mediaWriter.beforeWrite(headers, request.headers());
         try {
             mediaWriter.write(getByteOutput(expectedLength));
         } catch (ScxIOException e) {
             throw new HttpSendException("发送 HTTP 响应失败 !!!", e);
         } catch (AlreadyClosedException e) {
-            throw new BodyAlreadySentException();
+            throw new IllegalSenderStateException(senderStatus);
         }
+
         return null;
     }
 
     @Override
-    public boolean isSent() {
-        if (byteOutput == null) {
-            return false;
-        }
-        return byteOutput.isClosed();
+    public ScxHttpSenderStatus senderStatus() {
+        return senderStatus;
     }
 
     private String getReasonPhrase() {
@@ -155,6 +165,9 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
 
         var responseHeaderStr = headers.encode();
 
+        // 标记发送中
+        senderStatus = ScxHttpSenderStatus.SENDING;
+
         //先写入头部内容
         var h = statusLineStr + "\r\n" + responseHeaderStr + "\r\n";
         connection.dataWriter.write(h.getBytes(UTF_8));
@@ -165,11 +178,14 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
         // 只有明确表示 分块的时候才使用分块
         var useChunkedTransfer = headers.transferEncoding() == CHUNKED;
 
-        // todo 这里的 Http1ServerResponseOutputStream 应该根据 contentLength 进行限制, 可以使用 使用 LengthBoundedOutput
-        var baseByteOutput = new Http1ServerResponseByteOutput(connection, closeConnection);
+        // 创建 基本 输出流
+        var baseByteOutput = new Http1ServerResponseByteOutput(connection, closeConnection, this);
 
         // 判断是否采用分块传输
-        return useChunkedTransfer ? new HttpChunkedByteOutput(baseByteOutput) : baseByteOutput;
+        return useChunkedTransfer ?
+            new HttpChunkedByteOutput(baseByteOutput) :
+            new ContentLengthByteOutput(baseByteOutput, expectedLength);
+
     }
 
 }
