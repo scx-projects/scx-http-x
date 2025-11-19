@@ -43,7 +43,6 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
     private ScxHttpStatusCode statusCode;
     private Http1Headers headers;
     private String reasonPhrase;
-    private ByteOutput byteOutput;
     private ScxHttpSenderStatus senderStatus;
 
     Http1ServerResponse(Http1ServerConnection connection, Http1ServerRequest request) {
@@ -53,7 +52,6 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
         this.statusCode = HttpStatusCode.OK;
         this.headers = new Http1Headers();
         this.reasonPhrase = null;
-        this.byteOutput = null;
         this.senderStatus = NOT_SENT;
     }
 
@@ -102,7 +100,7 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
 
         var expectedLength = mediaWriter.beforeWrite(headers, request.headers());
         try {
-            mediaWriter.write(getByteOutput(expectedLength));
+            mediaWriter.write(sendHeaders(expectedLength));
         } catch (ScxIOException e) {
             throw new HttpSendException("发送 HTTP 响应失败 !!!", e);
         } catch (AlreadyClosedException e) {
@@ -129,13 +127,6 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
 
     private String getReasonPhrase() {
         return reasonPhrase != null ? reasonPhrase : ScxHttpStatusCodeHelper.getReasonPhrase(statusCode, "unknown");
-    }
-
-    private ByteOutput getByteOutput(long expectedLength) {
-        if (byteOutput == null) {
-            byteOutput = sendHeaders(expectedLength);
-        }
-        return byteOutput;
     }
 
     private ByteOutput sendHeaders(long expectedLength) {
