@@ -13,9 +13,9 @@ import cool.scx.io.ByteInput;
 import cool.scx.io.ByteOutput;
 import cool.scx.io.DefaultByteInput;
 import cool.scx.io.ScxIO;
-import cool.scx.tcp.ScxTCPSocket;
 
 import java.io.IOException;
+import java.net.Socket;
 
 import static cool.scx.http.headers.HttpHeaderName.HOST;
 import static cool.scx.http.x.http1.Http1Helper.checkRequestHasBody;
@@ -30,16 +30,16 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /// @version 0.0.1
 public class Http1ClientConnection {
 
-    public final ScxTCPSocket tcpSocket;
+    public final Socket tcpSocket;
     public final ByteInput dataReader;
     public final ByteOutput dataWriter;
 
     private final Http1ClientConnectionOptions options;
 
-    public Http1ClientConnection(ScxTCPSocket tcpSocket, Http1ClientConnectionOptions options) {
+    public Http1ClientConnection(Socket tcpSocket, Http1ClientConnectionOptions options) throws IOException {
         this.tcpSocket = tcpSocket;
-        this.dataReader = ScxIO.createByteInput(tcpSocket.inputStream());
-        this.dataWriter = ScxIO.createByteOutput(tcpSocket.outputStream());
+        this.dataReader = ScxIO.createByteInput(tcpSocket.getInputStream());
+        this.dataWriter = ScxIO.createByteOutput(tcpSocket.getOutputStream());
         this.options = options;
     }
 
