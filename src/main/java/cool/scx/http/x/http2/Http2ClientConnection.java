@@ -1,12 +1,13 @@
 package cool.scx.http.x.http2;
 
 import cool.scx.http.media.MediaWriter;
-import cool.scx.tcp.ScxTCPSocket;
+
+import java.net.Socket;
 
 // 待完成
 public class Http2ClientConnection {
 
-    public Http2ClientConnection(ScxTCPSocket tcpSocket, Http2ClientConnectionOptions options) {
+    public Http2ClientConnection(Socket tcpSocket, Http2ClientConnectionOptions options) {
 
     }
 
