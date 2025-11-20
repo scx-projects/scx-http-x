@@ -43,7 +43,7 @@ public class Http1ClientConnection {
         var expectedLength = writer.beforeWrite(tempHeaders, ScxHttpHeaders.of());
 
         // 发送头
-        var byteOutput = sendRequestHeaders(expectedLength, request,this, tempHeaders);
+        var byteOutput = sendRequestHeaders(expectedLength, request, this, tempHeaders);
 
         // 调用处理器
         writer.write(byteOutput);
