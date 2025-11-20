@@ -1,7 +1,5 @@
 package cool.scx.http.x.http1;
 
-import cool.scx.http.sender.ScxHttpSenderStatus;
-import cool.scx.http.x.HttpClientRequest;
 import cool.scx.http.x.http1.byte_output.ContentLengthByteOutput;
 import cool.scx.http.x.http1.byte_output.Http1ClientRequestByteOutput;
 import cool.scx.http.x.http1.byte_output.Http1ServerResponseByteOutput;
@@ -14,6 +12,7 @@ import cool.scx.io.exception.AlreadyClosedException;
 import cool.scx.io.exception.ScxIOException;
 
 import static cool.scx.http.headers.HttpHeaderName.HOST;
+import static cool.scx.http.sender.ScxHttpSenderStatus.SENDING;
 import static cool.scx.http.sender.ScxHttpSenderStatus.SUCCESS;
 import static cool.scx.http.status_code.ScxHttpStatusCodeHelper.getReasonPhrase;
 import static cool.scx.http.x.http1.Http1Helper.checkRequestHasBody;
@@ -76,7 +75,7 @@ public final class Http1Writer {
         var responseHeaderStr = headers.encode();
 
         // 标记发送中
-        response.senderStatus = ScxHttpSenderStatus.SENDING;
+        response._setSenderStatus(SENDING);
 
         // 构建头部内容字节
         var h = statusLineStr + "\r\n" + responseHeaderStr + "\r\n";
@@ -92,7 +91,7 @@ public final class Http1Writer {
         var useChunkedTransfer = headers.transferEncoding() == CHUNKED;
 
         // 创建 基本 输出流
-        var baseByteOutput = new Http1ServerResponseByteOutput(connection, closeConnection, () -> response.senderStatus = SUCCESS);
+        var baseByteOutput = new Http1ServerResponseByteOutput(connection, closeConnection, () -> response._setSenderStatus(SUCCESS));
 
         // 判断是否采用分块传输
         return useChunkedTransfer ?
@@ -101,7 +100,7 @@ public final class Http1Writer {
 
     }
 
-    public static ByteOutput sendRequestHeaders(long expectedLength, HttpClientRequest request, Http1ClientConnection connection, Http1Headers headers) throws ScxIOException, AlreadyClosedException {
+    public static ByteOutput sendRequestHeaders(long expectedLength, Http1ClientRequest request, Http1ClientConnection connection, Http1Headers headers) throws ScxIOException, AlreadyClosedException {
         // 0, 准备参数
         var method = request.method();
         var uri = request.uri();
@@ -151,7 +150,7 @@ public final class Http1Writer {
         var requestHeaderStr = headers.encode();
 
         // 标记发送中
-        request.senderStatus = ScxHttpSenderStatus.SENDING;
+        request._setSenderStatus(SENDING);
 
         // 构建头部内容字节
         var h = requestLineStr + "\r\n" + requestHeaderStr + "\r\n";
@@ -164,7 +163,7 @@ public final class Http1Writer {
         var useChunkedTransfer = headers.transferEncoding() == CHUNKED;
 
         // 创建 基本 输出流
-        var baseByteOutput = new Http1ClientRequestByteOutput(connection.dataWriter, () -> request.senderStatus = ScxHttpSenderStatus.SUCCESS);
+        var baseByteOutput = new Http1ClientRequestByteOutput(connection.dataWriter, () -> request._setSenderStatus(SUCCESS));
 
         // 判断是否采用分块传输
         return useChunkedTransfer ?
