@@ -1,7 +1,6 @@
 package cool.scx.http.x.http1;
 
 import cool.scx.http.sender.ScxHttpSenderStatus;
-import cool.scx.http.status_code.ScxHttpStatusCodeHelper;
 import cool.scx.http.x.HttpClientRequest;
 import cool.scx.http.x.http1.byte_output.ContentLengthByteOutput;
 import cool.scx.http.x.http1.byte_output.Http1ClientRequestByteOutput;
@@ -102,7 +101,7 @@ public final class Http1Writer {
 
     }
 
-    public static ByteOutput sendRequestHeaders(long expectedLength, HttpClientRequest request, Http1ClientConnection connection, Http1Headers headers) {
+    public static ByteOutput sendRequestHeaders(long expectedLength, HttpClientRequest request, Http1ClientConnection connection, Http1Headers headers) throws ScxIOException, AlreadyClosedException {
         // 0, 准备参数
         var method = request.method();
         var uri = request.uri();
