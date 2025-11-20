@@ -39,13 +39,12 @@ public class HttpClientRequest implements Http1ClientRequest, Http2ClientRequest
     private final HttpClient httpClient;
     private final HttpClientOptions options;
     private final ReentrantLock sendLock;
-    public ScxHttpSenderStatus senderStatus;
-
-    protected HttpVersion[] httpVersions;
-    protected ScxHttpMethod method;
-    protected ScxURIWritable uri;
-    protected ScxHttpHeadersWritable headers;
-    protected RequestTargetForm requestTargetForm;
+    private HttpVersion[] httpVersions;
+    private ScxHttpMethod method;
+    private ScxURIWritable uri;
+    private ScxHttpHeadersWritable headers;
+    private RequestTargetForm requestTargetForm;
+    private ScxHttpSenderStatus senderStatus;
 
     public HttpClientRequest(HttpClient httpClient, HttpVersion... httpVersions) {
         this.httpClient = httpClient;
@@ -162,6 +161,11 @@ public class HttpClientRequest implements Http1ClientRequest, Http2ClientRequest
     public HttpClientRequest requestTargetForm(RequestTargetForm requestTargetForm) {
         this.requestTargetForm = requestTargetForm;
         return this;
+    }
+
+    @Override
+    public void _setSenderStatus(ScxHttpSenderStatus senderStatus) {
+        this.senderStatus = senderStatus;
     }
 
 }

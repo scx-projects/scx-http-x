@@ -31,12 +31,10 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
 
     private final Http1ServerRequest request;
     private final ReentrantLock sendLock;
-
-    ScxHttpSenderStatus senderStatus;
-
     private ScxHttpStatusCode statusCode;
     private Http1Headers headers;
     private String reasonPhrase;
+    private ScxHttpSenderStatus senderStatus;
 
     Http1ServerResponse(Http1ServerConnection connection, Http1ServerRequest request) {
         this.connection = connection;
@@ -146,6 +144,11 @@ public class Http1ServerResponse implements ScxHttpServerResponse {
     @Override
     public ScxHttpSenderStatus senderStatus() {
         return senderStatus;
+    }
+
+    /// 内部方法 只应该由 Http1Writer 调用
+    void _setSenderStatus(ScxHttpSenderStatus senderStatus) {
+        this.senderStatus = senderStatus;
     }
 
 }

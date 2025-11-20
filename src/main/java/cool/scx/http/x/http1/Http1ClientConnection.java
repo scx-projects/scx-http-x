@@ -2,7 +2,6 @@ package cool.scx.http.x.http1;
 
 import cool.scx.http.headers.ScxHttpHeaders;
 import cool.scx.http.media.MediaWriter;
-import cool.scx.http.x.HttpClientRequest;
 import cool.scx.http.x.http1.headers.Http1Headers;
 import cool.scx.io.ByteInput;
 import cool.scx.io.ByteOutput;
@@ -35,7 +34,7 @@ public class Http1ClientConnection {
         this.options = options;
     }
 
-    public Http1ClientConnection sendRequest(HttpClientRequest request, MediaWriter writer) throws IOException {
+    public Http1ClientConnection sendRequest(Http1ClientRequest request, MediaWriter writer) throws IOException {
         // 复制一份头
         var tempHeaders = new Http1Headers(request.headers());
 
