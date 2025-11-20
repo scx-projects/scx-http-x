@@ -16,6 +16,7 @@ import cool.scx.io.exception.ScxIOException;
 
 import static cool.scx.http.headers.HttpHeaderName.HOST;
 import static cool.scx.http.sender.ScxHttpSenderStatus.SUCCESS;
+import static cool.scx.http.status_code.ScxHttpStatusCodeHelper.getReasonPhrase;
 import static cool.scx.http.x.http1.Http1Helper.checkRequestHasBody;
 import static cool.scx.http.x.http1.Http1Helper.checkResponseHasBody;
 import static cool.scx.http.x.http1.headers.connection.Connection.CLOSE;
@@ -29,7 +30,7 @@ public final class Http1Writer {
         // 0, 准备参数
         var httpVersion = request.version();
         var statusCode = response.statusCode();
-        var reasonPhrase = response.reasonPhrase() != null ? response.reasonPhrase() : ScxHttpStatusCodeHelper.getReasonPhrase(response.statusCode(), "unknown");
+        var reasonPhrase = response.reasonPhrase() != null ? response.reasonPhrase() : getReasonPhrase(statusCode, "unknown");
         var connection = response.connection;
 
         // 1, 创建 响应行
@@ -78,10 +79,11 @@ public final class Http1Writer {
         // 标记发送中
         response.senderStatus = ScxHttpSenderStatus.SENDING;
 
-        //先写入头部内容
+        // 构建头部内容字节
         var h = statusLineStr + "\r\n" + responseHeaderStr + "\r\n";
         var hb = h.getBytes(UTF_8);
 
+        // 写入 socket
         connection.dataWriter.write(hb);
 
         // 只有明确表示 close 的时候我们才关闭
@@ -151,10 +153,11 @@ public final class Http1Writer {
 
         request.senderStatus = ScxHttpSenderStatus.SENDING;
 
-        //先写入头部内容
+        // 构建头部内容字节
         var h = requestLineStr + "\r\n" + requestHeaderStr + "\r\n";
         var hb = h.getBytes(UTF_8);
 
+        // 写入 socket
         connection.dataWriter.write(hb);
 
         // 只有明确表示 分块的时候才使用分块
