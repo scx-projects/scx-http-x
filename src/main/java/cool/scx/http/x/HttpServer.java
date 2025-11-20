@@ -7,17 +7,17 @@ import cool.scx.http.error_handler.ScxHttpServerErrorHandler;
 import cool.scx.http.x.http1.Http1ServerConnection;
 import cool.scx.http.x.http2.Http2ServerConnection;
 import cool.scx.tcp.ScxTCPServer;
-import cool.scx.tcp.ScxTCPSocket;
 import cool.scx.tcp.TCPServer;
 
+import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.lang.System.Logger;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.SocketAddress;
 
 import static cool.scx.http.version.HttpVersion.HTTP_1_1;
 import static cool.scx.http.version.HttpVersion.HTTP_2;
-import static cool.scx.http.x.HttpXHelper.tryCloseSocket;
 import static java.lang.System.Logger.Level.TRACE;
 
 /// Http 服务器
@@ -43,23 +43,35 @@ public final class HttpServer implements ScxHttpServer {
         this(new HttpServerOptions());
     }
 
-    private void handle(ScxTCPSocket tcpSocket) {
+    private void handle(Socket tcpSocket) throws IOException {
         // 1. 配置 tls
         if (options.tls() != null) {
+            // 临时对象
+            SSLSocket sslSocket;
             try {
-                tcpSocket.upgradeToTLS(options.tls());
+                sslSocket = options.tls().upgradeToTLS(tcpSocket);
+                // 重新赋值 tcpSocket 以便后续使用
+                tcpSocket = sslSocket;
             } catch (IOException e) {
-                tryCloseSocket(tcpSocket, e);
+                try {
+                    tcpSocket.close();
+                } catch (IOException ex) {
+                    e.addSuppressed(ex);
+                }
                 LOGGER.log(TRACE, "升级到 TLS 时发生错误 !!!", e);
                 return;
             }
-            tcpSocket.tlsManager().setUseClientMode(false);
-            tcpSocket.tlsManager().setHandshakeApplicationProtocolSelector((_, protocols) -> options.enableHttp2() && protocols.contains(HTTP_2.alpnValue()) ? HTTP_2.alpnValue() : protocols.contains(HTTP_1_1.alpnValue()) ? HTTP_1_1.alpnValue() : null);
+            sslSocket.setUseClientMode(false);
+            sslSocket.setHandshakeApplicationProtocolSelector((_, protocols) -> options.enableHttp2() && protocols.contains(HTTP_2.alpnValue()) ? HTTP_2.alpnValue() : protocols.contains(HTTP_1_1.alpnValue()) ? HTTP_1_1.alpnValue() : null);
             // 开始握手
             try {
-                tcpSocket.startHandshake();
+                sslSocket.startHandshake();
             } catch (IOException e) {
-                tryCloseSocket(tcpSocket, e);
+                try {
+                    tcpSocket.close();
+                } catch (IOException ex) {
+                    e.addSuppressed(ex);
+                }
                 LOGGER.log(TRACE, "处理 TLS 握手 时发生错误 !!!", e);
                 return;
             }
@@ -68,8 +80,8 @@ public final class HttpServer implements ScxHttpServer {
         // 2, 检测是否使用 Http2
         var useHttp2 = false;
 
-        if (tcpSocket.isTLS()) {
-            var applicationProtocol = tcpSocket.tlsManager().getApplicationProtocol();
+        if (tcpSocket instanceof SSLSocket sslSocket) {
+            var applicationProtocol = sslSocket.getApplicationProtocol();
             useHttp2 = HTTP_2.alpnValue().equals(applicationProtocol);
         }
 
