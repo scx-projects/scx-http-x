@@ -15,8 +15,10 @@ import cool.scx.io.ByteInput;
 import cool.scx.io.ByteOutput;
 import cool.scx.io.exception.AlreadyClosedException;
 import cool.scx.io.exception.ScxIOException;
-import cool.scx.tcp.ScxTCPSocket;
 
+import javax.net.ssl.SSLSocket;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
 import static cool.scx.common.util.StringUtils.isBlank;
@@ -84,14 +86,14 @@ public final class Http1Helper {
     }
 
     /// 推断 URI, 事实上我们无法拿到真正的地址 所以这里只是推测而已.
-    public static ScxURI inferURI(ScxURI requestLineTarget, ScxHttpHeaders headers, ScxTCPSocket tcpSocket) {
+    public static ScxURI inferURI(ScxURI requestLineTarget, ScxHttpHeaders headers, Socket tcpSocket) {
         var uri = ScxURI.of(requestLineTarget);
         // 1, 有可能已经是全路径 我们判断一下是否存在协议
         if (uri.scheme() != null) {
             return uri;
         }
         // 2, 推测协议
-        if (tcpSocket.isTLS()) {
+        if (tcpSocket instanceof SSLSocket) {
             uri.scheme("https");
         } else {
             uri.scheme("http");
@@ -102,20 +104,20 @@ public final class Http1Helper {
             var authority = ScxURI.ofAuthority(host);
             uri.host(authority.host()).port(authority.port());
         } else {
-            var localAddress = tcpSocket.localAddress();
+            var localAddress = (InetSocketAddress) tcpSocket.getLocalSocketAddress();
             uri.host(localAddress.getHostString()).port(localAddress.getPort());
         }
         return uri;
     }
 
-    public static PeerInfoWritable getRemotePeer(ScxTCPSocket tcpSocket) {
-        var address = tcpSocket.remoteAddress();
+    public static PeerInfoWritable getRemotePeer(Socket tcpSocket) {
+        var address = (InetSocketAddress) tcpSocket.getRemoteSocketAddress();
         //todo 未完成 tls 信息没有写入
         return PeerInfo.of().address(address).host(address.getHostString()).port(address.getPort());
     }
 
-    public static PeerInfoWritable getLocalPeer(ScxTCPSocket tcpSocket) {
-        var address = tcpSocket.localAddress();
+    public static PeerInfoWritable getLocalPeer(Socket tcpSocket) {
+        var address = (InetSocketAddress) tcpSocket.getLocalSocketAddress();
         //todo 未完成 tls 信息没有写入
         return PeerInfo.of().address(address).host(address.getHostString()).port(address.getPort());
     }
