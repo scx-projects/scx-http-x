@@ -8,7 +8,6 @@ import cool.scx.http.exception.BadRequestException;
 import cool.scx.http.exception.ContentTooLargeException;
 import cool.scx.http.exception.URITooLongException;
 import cool.scx.http.method.ScxHttpMethod;
-import cool.scx.http.sender.ScxHttpSenderStatus;
 import cool.scx.http.uri.ScxURI;
 import cool.scx.http.x.http1.body_supplier.AutoContinueByteSupplier;
 import cool.scx.http.x.http1.exception.HttpVersionNotSupportedException;
@@ -18,10 +17,10 @@ import cool.scx.http.x.http1.request_line.Http1RequestLine;
 import cool.scx.io.*;
 import cool.scx.io.exception.AlreadyClosedException;
 import cool.scx.io.exception.ScxIOException;
-import cool.scx.tcp.ScxTCPSocket;
 
 import java.io.IOException;
 import java.lang.System.Logger;
+import java.net.Socket;
 
 import static cool.scx.http.error_handler.DefaultHttpServerErrorHandler.DEFAULT_HTTP_SERVER_ERROR_HANDLER;
 import static cool.scx.http.error_handler.ErrorPhase.SYSTEM;
@@ -44,7 +43,7 @@ public class Http1ServerConnection {
 
     private final static Logger LOGGER = getLogger(Http1ServerConnection.class.getName());
 
-    public final ScxTCPSocket tcpSocket;
+    public final Socket tcpSocket;
     public final ByteInput dataReader;
     public final ByteOutput dataWriter;
 
@@ -53,10 +52,10 @@ public class Http1ServerConnection {
     private final ScxHttpServerErrorHandler errorHandler;
     private boolean running;
 
-    public Http1ServerConnection(ScxTCPSocket tcpSocket, Http1ServerConnectionOptions options, Function1Void<ScxHttpServerRequest, ?> requestHandler, ScxHttpServerErrorHandler errorHandler) {
+    public Http1ServerConnection(Socket tcpSocket, Http1ServerConnectionOptions options, Function1Void<ScxHttpServerRequest, ?> requestHandler, ScxHttpServerErrorHandler errorHandler) throws IOException {
         this.tcpSocket = tcpSocket;
-        this.dataReader = ScxIO.createByteInput(this.tcpSocket.inputStream());
-        this.dataWriter = ScxIO.createByteOutput(this.tcpSocket.outputStream());
+        this.dataReader = ScxIO.createByteInput(this.tcpSocket.getInputStream());
+        this.dataWriter = ScxIO.createByteOutput(this.tcpSocket.getOutputStream());
         this.options = options;
         this.requestHandler = requestHandler;
         this.errorHandler = errorHandler;
