@@ -140,7 +140,7 @@ public final class Http1Writer {
             // body 长度为 0 时 , 分两种情况
             // 1, 是需要明确写入 Content-Length : 0 的
             // 2, 是不需要写入任何长度相关字段
-            var hasBody = checkRequestHasBody(request.method());
+            var hasBody = checkRequestHasBody(method);
             if (hasBody) {
                 // 这里同上, 进行分块传输判断
                 if (headers.transferEncoding() != CHUNKED) {
