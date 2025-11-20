@@ -5,11 +5,11 @@ import cool.scx.http.x.HttpClient;
 import cool.scx.http.x.HttpServer;
 import cool.scx.http.x.http1.Http1ClientResponse;
 import cool.scx.http.x.http1.Http1ServerRequest;
-import cool.scx.tcp.ScxTCPSocket;
 import cool.scx.tcp.TCPClient;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 
 // 测试代理功能
 public class HttpProxyServerTest {
@@ -36,11 +36,11 @@ public class HttpProxyServerTest {
                 var serverTCPSocket = serverConnection.tcpSocket;
                 //4, 创建 远端连接
                 var tcpClient = new TCPClient();
-                ScxTCPSocket clientTCPSocket;
+                Socket clientTCPSocket;
                 try {
                     clientTCPSocket = tcpClient.connect(new InetSocketAddress(c.uri().host(), c.uri().port()));
                 } catch (IOException e) {
-                    throw new RuntimeException("连接远端失败 !!!", e);
+                    throw new RuntimeException("连接远端失败 : " + c.uri(), e);
                 }
 
                 //5, 通知代理连接成功
@@ -49,8 +49,8 @@ public class HttpProxyServerTest {
                 //开启两个线程 进行数据相互传输 其中 tls 相关内容 我们直接原封不动传输
                 Thread.ofVirtual().start(() -> {
                     try {
-                        var outputStream = serverTCPSocket.outputStream();
-                        var inputStream = clientTCPSocket.inputStream();
+                        var outputStream = serverTCPSocket.getOutputStream();
+                        var inputStream = clientTCPSocket.getInputStream();
                         inputStream.transferTo(outputStream);
                     } catch (IOException e) {
                         try {
@@ -64,8 +64,8 @@ public class HttpProxyServerTest {
 
                 Thread.ofVirtual().start(() -> {
                     try {
-                        var outputStream = clientTCPSocket.outputStream();
-                        var inputStream = serverTCPSocket.inputStream();
+                        var outputStream = clientTCPSocket.getOutputStream();
+                        var inputStream = serverTCPSocket.getInputStream();
                         inputStream.transferTo(outputStream);
                     } catch (IOException e) {
                         try {
