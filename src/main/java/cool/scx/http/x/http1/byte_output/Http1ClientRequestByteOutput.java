@@ -1,6 +1,6 @@
 package cool.scx.http.x.http1.byte_output;
 
-import cool.scx.function.Function0Void;
+import dev.scx.function.Function0Void;
 import cool.scx.io.ByteChunk;
 import cool.scx.io.ByteOutput;
 import cool.scx.io.exception.AlreadyClosedException;

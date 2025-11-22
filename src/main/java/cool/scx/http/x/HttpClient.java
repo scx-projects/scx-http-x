@@ -4,8 +4,8 @@ import cool.scx.http.ScxHttpClient;
 import cool.scx.http.uri.ScxURI;
 import cool.scx.http.version.HttpVersion;
 import cool.scx.http.x.http1.Http1ClientConnection;
-import cool.scx.tcp.TCPClient;
-import cool.scx.tcp.tls.TLS;
+import dev.scx.tcp.TCPClient;
+import dev.scx.tcp.tls.TLS;
 
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLSocket;

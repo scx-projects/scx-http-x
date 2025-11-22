@@ -3,7 +3,7 @@ package cool.scx.http.x;
 import cool.scx.http.x.http1.Http1ClientConnectionOptions;
 import cool.scx.http.x.http2.Http2ClientConnectionOptions;
 import cool.scx.http.x.proxy.Proxy;
-import cool.scx.tcp.tls.TLS;
+import dev.scx.tcp.tls.TLS;
 
 /// HttpClientOptions
 ///

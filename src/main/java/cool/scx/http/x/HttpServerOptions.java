@@ -3,8 +3,8 @@ package cool.scx.http.x;
 import cool.scx.http.x.http1.Http1ServerConnectionOptions;
 import cool.scx.http.x.http1.Http1UpgradeHandler;
 import cool.scx.http.x.http2.Http2ServerConnectionOptions;
-import cool.scx.tcp.TCPServerOptions;
-import cool.scx.tcp.tls.TLS;
+import dev.scx.tcp.TCPServerOptions;
+import dev.scx.tcp.tls.TLS;
 
 import java.util.List;
 

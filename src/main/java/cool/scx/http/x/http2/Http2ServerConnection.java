@@ -1,6 +1,6 @@
 package cool.scx.http.x.http2;
 
-import cool.scx.function.Function1Void;
+import dev.scx.function.Function1Void;
 import cool.scx.http.ScxHttpServerRequest;
 import cool.scx.http.error_handler.ScxHttpServerErrorHandler;
 

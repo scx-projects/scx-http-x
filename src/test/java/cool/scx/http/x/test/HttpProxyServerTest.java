@@ -5,7 +5,7 @@ import cool.scx.http.x.HttpClient;
 import cool.scx.http.x.HttpServer;
 import cool.scx.http.x.http1.Http1ClientResponse;
 import cool.scx.http.x.http1.Http1ServerRequest;
-import cool.scx.tcp.TCPClient;
+import dev.scx.tcp.TCPClient;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
