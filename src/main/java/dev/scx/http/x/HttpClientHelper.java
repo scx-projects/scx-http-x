@@ -18,8 +18,8 @@ import static dev.scx.http.x.http1.io.Http1Writer.getDefaultPort;
 /// @version 0.0.1
 final class HttpClientHelper {
 
-    /// 注意和 HttpServer 不同, 我们没办法使用 "try-with-resources" 帮我们兜底, 所以要小心处理 异常和 close.
-    public static SSLSocket configTLS(Socket tcpSocket, TLS tls, ScxURI uri, String... applicationProtocols) throws IOException {
+    /// 注意要小心处理 异常和 close.
+    public static SSLSocket configClientTLS(Socket tcpSocket, TLS tls, String host, String... applicationProtocols) throws IOException {
         SSLSocket sslSocket;
         // 1, 手动升级
         try {
@@ -30,7 +30,7 @@ final class HttpClientHelper {
             } catch (IOException ex) {
                 e.addSuppressed(ex);
             }
-            throw new IOException("升级到 TLS 时发生错误 !!!", e);
+            throw e;
         }
 
         // 2, 配置 参数
@@ -39,7 +39,7 @@ final class HttpClientHelper {
         var sslParameters = sslSocket.getSSLParameters();
 
         sslParameters.setApplicationProtocols(applicationProtocols);
-        sslParameters.setServerNames(List.of(new SNIHostName(uri.host())));
+        sslParameters.setServerNames(List.of(new SNIHostName(host)));
 
         // 别忘了写回 参数
         sslSocket.setSSLParameters(sslParameters);
@@ -53,10 +53,11 @@ final class HttpClientHelper {
             } catch (IOException ex) {
                 e.addSuppressed(ex);
             }
-            throw new IOException("处理 TLS 握手 时发生错误 !!!", e);
+            throw e;
         }
 
         return sslSocket;
+
     }
 
     public static boolean checkIsTLS(String scheme) {

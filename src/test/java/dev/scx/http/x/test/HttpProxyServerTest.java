@@ -30,8 +30,8 @@ public class HttpProxyServerTest {
                 System.out.println("收到 HTTPS 代理请求 : " + c.uri());
                 //1, 获取连接对象
                 var serverConnection = request.connection;
-                //2, 停止循环
-                serverConnection.stop();
+                //2, 交接 Socket 所有权
+                serverConnection.detach();
                 //3, 获取 当前连接的 底层 tcpSocket 内容
                 var serverTCPSocket = serverConnection.tcpSocket;
                 //4, 创建 远端连接
@@ -76,10 +76,6 @@ public class HttpProxyServerTest {
                         }
                     }
                 });
-
-                // 这里需要防止 当前 onRequest 完结
-                clientToServer.join();
-                serverToClient.join();
 
             } else {
                 // 普通 Http 代理

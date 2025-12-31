@@ -19,7 +19,8 @@ import java.util.List;
 
 import static dev.scx.http.version.HttpVersion.HTTP_1_1;
 import static dev.scx.http.version.HttpVersion.HTTP_2;
-import static java.lang.System.Logger.Level.TRACE;
+import static dev.scx.http.x.HttpServerHelper.configServerTLS;
+import static java.lang.System.Logger.Level.DEBUG;
 
 /// Http 服务器
 ///
@@ -60,11 +61,11 @@ public final class HttpServer implements ScxHttpServer {
     }
 
     private void handle(Socket socket) {
-        // 兜底 Socket 关闭, 防止资源泄露
-        try (socket) {
+        try {
             handle0(socket);
-        } catch (IOException _) {
-            // 这里的 IOException 异常都是发生在 调用用户处理器之前, 所以没有什么记录价值.
+        } catch (IOException e) {
+            // 这里的 IOException 异常都是发生在 开始解析 HTTP 协议之前, 一般没有什么重要价值.
+            LOGGER.log(DEBUG, "HTTP 协议解析前出现　Socket 异常", e);
         }
     }
 
@@ -72,25 +73,7 @@ public final class HttpServer implements ScxHttpServer {
     private void handle0(Socket tcpSocket) throws IOException {
         // 1. 处理 TLS
         if (options.tls() != null) {
-            // 临时对象
-            SSLSocket sslSocket;
-            try {
-                sslSocket = options.tls().upgradeToTLS(tcpSocket);
-                // 重新赋值 tcpSocket 以便后续使用
-                tcpSocket = sslSocket;
-            } catch (IOException e) {
-                LOGGER.log(TRACE, "升级到 TLS 时发生错误 !!!", e);
-                return;
-            }
-            sslSocket.setUseClientMode(false);
-            sslSocket.setHandshakeApplicationProtocolSelector(this::protocolSelector);
-            // 开始握手
-            try {
-                sslSocket.startHandshake();
-            } catch (IOException e) {
-                LOGGER.log(TRACE, "处理 TLS 握手 时发生错误 !!!", e);
-                return;
-            }
+            tcpSocket = configServerTLS(tcpSocket, options.tls(), this::protocolSelector);
         }
 
         // 2, 检测是否使用 Http2
@@ -104,13 +87,21 @@ public final class HttpServer implements ScxHttpServer {
         // 3, 根据协议不同选择不同的连接处理器
         if (useHttp2) {
             var http2ServerConnection = new Http2ServerConnection(tcpSocket, options.http2ServerConnectionOptions(), requestHandler, errorHandler);
-            // start 为阻塞方法
-            http2ServerConnection.start();
+            try (http2ServerConnection) {
+                // start 为阻塞方法
+                http2ServerConnection.start();
+            } catch (IOException _) {
+                // 这里的异常是一般是 Socket.close() 异常 无需处理
+            }
         } else {
             // 此处的 Http1 特指 HTTP/1.1
             var http1ServerConnection = new Http1ServerConnection(tcpSocket, options.http1ServerConnectionOptions(), requestHandler, errorHandler);
-            // start 为阻塞方法
-            http1ServerConnection.start();
+            try (http1ServerConnection) {
+                // start 为阻塞方法
+                http1ServerConnection.start();
+            } catch (IOException _) {
+                // 这里的异常是一般是 Socket.close() 异常 无需处理
+            }
         }
 
     }
