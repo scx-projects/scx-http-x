@@ -4,8 +4,6 @@ import dev.scx.function.Function1Void;
 import dev.scx.http.ScxHttpServer;
 import dev.scx.http.ScxHttpServerRequest;
 import dev.scx.http.error_handler.ScxHttpServerErrorHandler;
-import dev.scx.http.x.http1.Http1ServerConnection;
-import dev.scx.http.x.http2.Http2ServerConnection;
 import dev.scx.tcp.ScxTCPServer;
 import dev.scx.tcp.TCPServer;
 
@@ -19,7 +17,7 @@ import java.util.List;
 
 import static dev.scx.http.version.HttpVersion.HTTP_1_1;
 import static dev.scx.http.version.HttpVersion.HTTP_2;
-import static dev.scx.http.x.HttpServerHelper.configServerTLS;
+import static dev.scx.http.x.HttpServerHelper.*;
 import static java.lang.System.Logger.Level.TRACE;
 
 /// Http 服务器
@@ -82,7 +80,7 @@ public final class HttpServer implements ScxHttpServer {
 
         // 3, 根据协议不同选择不同的连接处理器
         if (useHttp2) {
-            try (var http2ServerConnection = new Http2ServerConnection(tcpSocket, options.http2ServerConnectionOptions(), requestHandler, errorHandler)) {
+            try (var http2ServerConnection = createHttp2ServerConnection(tcpSocket, options.http2ServerConnectionOptions(), requestHandler, errorHandler)) {
                 // start 为阻塞方法
                 http2ServerConnection.start();
             } catch (IOException _) {
@@ -90,7 +88,7 @@ public final class HttpServer implements ScxHttpServer {
             }
         } else {
             // 此处的 Http1 特指 HTTP/1.1
-            try (var http1ServerConnection = new Http1ServerConnection(tcpSocket, options.http1ServerConnectionOptions(), requestHandler, errorHandler);) {
+            try (var http1ServerConnection = createHttp1ServerConnection(tcpSocket, options.http1ServerConnectionOptions(), requestHandler, errorHandler)) {
                 // start 为阻塞方法
                 http1ServerConnection.start();
             } catch (IOException _) {

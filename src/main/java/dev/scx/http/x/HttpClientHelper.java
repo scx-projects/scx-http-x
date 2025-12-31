@@ -1,6 +1,10 @@
 package dev.scx.http.x;
 
 import dev.scx.http.uri.ScxURI;
+import dev.scx.http.x.http1.Http1ClientConnection;
+import dev.scx.http.x.http1.Http1ClientConnectionOptions;
+import dev.scx.http.x.http2.Http2ClientConnection;
+import dev.scx.http.x.http2.Http2ClientConnectionOptions;
 import dev.scx.tcp.tls.TLS;
 
 import javax.net.ssl.SNIHostName;
@@ -19,19 +23,9 @@ import static dev.scx.http.x.http1.io.Http1Writer.getDefaultPort;
 final class HttpClientHelper {
 
     /// 注意要小心处理 异常和 close.
-    public static SSLSocket configClientTLS(Socket tcpSocket, TLS tls, String host, String... applicationProtocols) throws IOException {
-        SSLSocket sslSocket;
+    private static SSLSocket configClientTLS0(Socket tcpSocket, TLS tls, String host, String... applicationProtocols) throws IOException {
         // 1, 手动升级
-        try {
-            sslSocket = tls.upgradeToTLS(tcpSocket);
-        } catch (IOException e) {
-            try {
-                tcpSocket.close();
-            } catch (IOException ex) {
-                e.addSuppressed(ex);
-            }
-            throw e;
-        }
+        var sslSocket = tls.upgradeToTLS(tcpSocket);
 
         // 2, 配置 参数
         sslSocket.setUseClientMode(true);
@@ -45,8 +39,16 @@ final class HttpClientHelper {
         sslSocket.setSSLParameters(sslParameters);
 
         // 3, 开始握手
+        sslSocket.startHandshake();
+
+        return sslSocket;
+
+    }
+
+    /// 失败内部会关闭 Socket
+    public static SSLSocket configClientTLS(Socket tcpSocket, TLS tls, String host, String... applicationProtocols) throws IOException {
         try {
-            sslSocket.startHandshake();
+            return configClientTLS0(tcpSocket, tls, host, applicationProtocols);
         } catch (IOException e) {
             try {
                 tcpSocket.close();
@@ -55,9 +57,34 @@ final class HttpClientHelper {
             }
             throw e;
         }
+    }
 
-        return sslSocket;
+    /// 失败内部会关闭 Socket
+    public static Http1ClientConnection createHttp1ClientConnection(Socket tcpSocket, Http1ClientConnectionOptions options) throws IOException {
+        try {
+            return new Http1ClientConnection(tcpSocket, options);
+        } catch (IOException e) {
+            try {
+                tcpSocket.close();
+            } catch (IOException ex) {
+                e.addSuppressed(ex);
+            }
+            throw e;
+        }
+    }
 
+    /// 失败内部会关闭 Socket
+    public static Http2ClientConnection createHttp2ClientConnection(Socket tcpSocket, Http2ClientConnectionOptions options) throws IOException {
+        try {
+            return new Http2ClientConnection(tcpSocket, options);
+        } catch (IOException e) {
+            try {
+                tcpSocket.close();
+            } catch (IOException ex) {
+                e.addSuppressed(ex);
+            }
+            throw e;
+        }
     }
 
     public static boolean checkIsTLS(String scheme) {

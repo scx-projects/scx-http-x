@@ -5,6 +5,7 @@ import dev.scx.http.x.HttpClient;
 import dev.scx.http.x.HttpServer;
 import dev.scx.http.x.http1.Http1ClientResponse;
 import dev.scx.http.x.http1.Http1ServerRequest;
+import dev.scx.io.exception.ScxIOException;
 import dev.scx.tcp.TCPClient;
 
 import java.io.IOException;
@@ -40,14 +41,14 @@ public class HttpProxyServerTest {
                 try {
                     clientTCPSocket = tcpClient.connect(new InetSocketAddress(c.uri().host(), c.uri().port()));
                 } catch (IOException e) {
-                    throw new RuntimeException("连接远端失败 : " + c.uri(), e);
+                    throw new ScxIOException("连接远端失败 : " + c.uri(), e);
                 }
 
                 //5, 通知代理连接成功
                 request.response().reasonPhrase("连接成功!!!").statusCode(200).send();
 
                 //开启两个线程 进行数据相互传输 其中 tls 相关内容 我们直接原封不动传输
-                Thread clientToServer = Thread.ofVirtual().start(() -> {
+                Thread.ofVirtual().start(() -> {
                     try {
                         var outputStream = serverTCPSocket.getOutputStream();
                         var inputStream = clientTCPSocket.getInputStream();
@@ -62,7 +63,7 @@ public class HttpProxyServerTest {
                     }
                 });
 
-                Thread serverToClient = Thread.ofVirtual().start(() -> {
+                Thread.ofVirtual().start(() -> {
                     try {
                         var outputStream = clientTCPSocket.getOutputStream();
                         var inputStream = serverTCPSocket.getInputStream();
