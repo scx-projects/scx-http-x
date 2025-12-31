@@ -86,15 +86,21 @@ public final class HttpServer implements ScxHttpServer {
 
         // 3, 根据协议不同选择不同的连接处理器
         if (useHttp2) {
-            try (var http2ServerConnection = new Http2ServerConnection(tcpSocket, options.http2ServerConnectionOptions(), requestHandler, errorHandler)) {
+            var http2ServerConnection = new Http2ServerConnection(tcpSocket, options.http2ServerConnectionOptions(), requestHandler, errorHandler);
+            try (http2ServerConnection) {
                 // start 为阻塞方法
                 http2ServerConnection.start();
+            } catch (IOException _) {
+                // 这里的异常是一般是 Socket.close() 异常 无需处理
             }
         } else {
             // 此处的 Http1 特指 HTTP/1.1
-            try (var http1ServerConnection = new Http1ServerConnection(tcpSocket, options.http1ServerConnectionOptions(), requestHandler, errorHandler)) {
+            var http1ServerConnection = new Http1ServerConnection(tcpSocket, options.http1ServerConnectionOptions(), requestHandler, errorHandler);
+            try (http1ServerConnection) {
                 // start 为阻塞方法
                 http1ServerConnection.start();
+            } catch (IOException _) {
+                // 这里的异常是一般是 Socket.close() 异常 无需处理
             }
         }
 

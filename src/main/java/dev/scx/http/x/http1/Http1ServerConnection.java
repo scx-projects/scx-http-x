@@ -40,7 +40,7 @@ import static java.lang.System.getLogger;
 ///
 /// @author scx567888
 /// @version 0.0.1
-public final class Http1ServerConnection {
+public final class Http1ServerConnection implements AutoCloseable {
 
     private final static Logger LOGGER = getLogger(Http1ServerConnection.class.getName());
 
@@ -204,6 +204,11 @@ public final class Http1ServerConnection {
             LOGGER.log(DEBUG, e);
         }
 
+    }
+
+    @Override
+    public void close() throws IOException {
+        tcpSocket.close();
     }
 
 }
