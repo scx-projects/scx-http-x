@@ -3,7 +3,6 @@ package dev.scx.http.x;
 import dev.scx.http.ScxHttpClient;
 import dev.scx.http.uri.ScxURI;
 import dev.scx.http.version.HttpVersion;
-import dev.scx.http.x.http1.Http1ClientConnection;
 import dev.scx.tcp.TCPClient;
 import dev.scx.tcp.tls.TLS;
 
@@ -89,7 +88,7 @@ public final class HttpClient implements ScxHttpClient {
         var tcpSocket = createPlainSocketWithProxy();
 
         // 2, 和代理服务器 握手
-        var proxyResponse = new Http1ClientConnection(tcpSocket, options.http1ClientConnectionOptions())
+        var proxyResponse = createHttp1ClientConnection(tcpSocket, options.http1ClientConnectionOptions())
             .sendRequest(
                 (HttpClientRequest) new HttpClientRequest(this, HTTP_1_1)
                     .method(CONNECT)
@@ -101,6 +100,11 @@ public final class HttpClient implements ScxHttpClient {
 
         // 3, 握手成功
         if (proxyResponse.statusCode() != OK) {
+            try {
+                tcpSocket.close();
+            } catch (IOException _) {
+                // 忽略这个异常 (没什么意义)
+            }
             throw new IOException("代理连接失败 :" + proxyResponse.statusCode());
         }
 
