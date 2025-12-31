@@ -59,10 +59,17 @@ public final class HttpServer implements ScxHttpServer {
         return null;
     }
 
-    /// 这里的 tcpSocket 其实相当于借用给我们,
-    /// 我们不需要也不应该在 handle 中管理 Socket 资源的关闭.
-    /// 但是注意 整个 handle 需要是完全同步阻塞的.
-    private void handle(Socket tcpSocket) throws IOException {
+    private void handle(Socket socket) {
+        // 兜底 Socket 关闭, 防止资源泄露
+        try (socket) {
+            handle0(socket);
+        } catch (IOException _) {
+            // 这里的 IOException 异常都是发生在 调用用户处理器之前, 所以没有什么记录价值.
+        }
+    }
+
+    /// 注意这里 整个 handle0 是完全同步阻塞的.
+    private void handle0(Socket tcpSocket) throws IOException {
         // 1. 处理 TLS
         if (options.tls() != null) {
             // 临时对象

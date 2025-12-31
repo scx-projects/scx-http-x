@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>scx-http-x</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
     <packaging>jar</packaging>
 
     <name>SCX HTTP X</name>
@@ -95,7 +95,7 @@
 
         <!-- *********************** 以下为依赖包版本 *********************** -->
         <scx-http.version>0.0.4</scx-http.version>
-        <scx-tcp.version>0.0.4</scx-tcp.version>
+        <scx-tcp.version>0.0.5</scx-tcp.version>
         <testng.version>7.11.0</testng.version>
 
     </properties>
