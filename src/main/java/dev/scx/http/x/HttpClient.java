@@ -72,7 +72,7 @@ public final class HttpClient implements ScxHttpClient {
     public Socket createTLSSocket(ScxURI uri, String... applicationProtocols) throws IOException {
         var tcpSocket = createPlainSocket(uri);
         // 配置一下 tls
-        return configTLS(tcpSocket, options.tls(), uri, applicationProtocols);
+        return configClientTLS(tcpSocket, options.tls(), uri.host(), applicationProtocols);
     }
 
     /// 创建 具有代理 的 明文 socket
@@ -105,7 +105,7 @@ public final class HttpClient implements ScxHttpClient {
         }
 
         // 4, 这种情况下我们信任所有证书
-        return configTLS(tcpSocket, TLS.ofTrustAny(), uri, applicationProtocols);
+        return configClientTLS(tcpSocket, TLS.ofTrustAny(), uri.host(), applicationProtocols);
     }
 
 }
