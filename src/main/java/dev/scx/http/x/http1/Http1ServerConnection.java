@@ -54,7 +54,8 @@ public final class Http1ServerConnection implements AutoCloseable {
     private final Http1ServerConnectionOptions options;
     private final Function1Void<ScxHttpServerRequest, ?> requestHandler;
     private final ScxHttpServerErrorHandler errorHandler;
-    private boolean running;
+    private boolean running; // 是否处于读取状态
+    private boolean attached;// 是否拥有 Socket
 
     public Http1ServerConnection(Socket tcpSocket, Http1ServerConnectionOptions options, Function1Void<ScxHttpServerRequest, ?> requestHandler, ScxHttpServerErrorHandler errorHandler) throws IOException {
         this.tcpSocket = tcpSocket;
@@ -64,6 +65,7 @@ public final class Http1ServerConnection implements AutoCloseable {
         this.requestHandler = requestHandler;
         this.errorHandler = errorHandler;
         this.running = true;
+        this.attached = true;
     }
 
     /// 这里我们只需要阻塞读取 无法处理跳出循环即可. 无需主动关闭 tcpSocket.
@@ -160,13 +162,15 @@ public final class Http1ServerConnection implements AutoCloseable {
         return new Http1ServerRequest(this, requestLine, headers, bodyByteInput);
     }
 
+    /// 停止读取 http 请求
     public void stop() {
-        // 停止读取 http 请求
         running = false;
     }
 
-    public boolean isRunning() {
-        return running;
+    /// 交接 Socket, 同时也会 stop()
+    public void detach() {
+        stop();
+        attached = false;
     }
 
     /// 处理系统级别错误
@@ -208,7 +212,10 @@ public final class Http1ServerConnection implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        tcpSocket.close();
+        // 只有在拥有 socket 所有权的情况下 我们才 close()
+        if (attached) {
+            tcpSocket.close();
+        }
     }
 
 }
