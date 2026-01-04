@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.lang.System.Logger;
 import java.net.Socket;
 
-import static dev.scx.http.error_handler.DefaultHttpServerErrorHandler.DEFAULT_HTTP_SERVER_ERROR_HANDLER;
+import static dev.scx.http.x.error_handler.DefaultHttpServerErrorHandler.DEFAULT_HTTP_SERVER_ERROR_HANDLER;
 import static dev.scx.http.error_handler.ErrorPhase.SYSTEM;
 import static dev.scx.http.error_handler.ErrorPhase.USER;
 import static dev.scx.http.x.http1.Http1ServerConnectionHelper.*;
