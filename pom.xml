@@ -95,7 +95,7 @@
 
         <!-- *********************** 以下为依赖包版本 *********************** -->
         <scx-http.version>0.0.4</scx-http.version>
-        <scx-tcp.version>0.0.5</scx-tcp.version>
+        <scx-tcp.version>0.1.0</scx-tcp.version>
         <testng.version>7.11.0</testng.version>
 
     </properties>
