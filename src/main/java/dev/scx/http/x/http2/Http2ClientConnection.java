@@ -3,14 +3,12 @@ package dev.scx.http.x.http2;
 import dev.scx.http.media.MediaWriter;
 import dev.scx.http.x.SocketIO;
 
-import java.io.IOException;
-
 /// 占位 (可能永远都不会实现)
 public class Http2ClientConnection {
 
     private final SocketIO socketIO;
 
-    public Http2ClientConnection(SocketIO socketIO, Http2ClientConnectionOptions options) throws IOException {
+    public Http2ClientConnection(SocketIO socketIO, Http2ClientConnectionOptions options) {
         this.socketIO = socketIO;
     }
 

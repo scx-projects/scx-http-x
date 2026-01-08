@@ -32,7 +32,7 @@ public final class Http1ClientConnection {
 
     private final Http1ClientConnectionOptions options;
 
-    public Http1ClientConnection(SocketIO socketIO, Http1ClientConnectionOptions options) throws IOException {
+    public Http1ClientConnection(SocketIO socketIO, Http1ClientConnectionOptions options) {
         this.socketIO = socketIO;
         this.options = options;
     }
