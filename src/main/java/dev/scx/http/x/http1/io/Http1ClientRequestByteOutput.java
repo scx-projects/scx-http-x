@@ -1,6 +1,7 @@
 package dev.scx.http.x.http1.io;
 
-import dev.scx.function.Function0Void;
+import dev.scx.http.sender.ScxHttpSenderStatus;
+import dev.scx.http.x.http1.Http1ClientRequest;
 import dev.scx.io.ByteChunk;
 import dev.scx.io.ByteOutput;
 import dev.scx.io.exception.AlreadyClosedException;
@@ -16,11 +17,11 @@ import dev.scx.io.output.AbstractByteOutput;
 public final class Http1ClientRequestByteOutput extends AbstractByteOutput {
 
     private final ByteOutput byteOutput;
-    private final Function0Void<RuntimeException> onClose;
+    private final Http1ClientRequest request;
 
-    public Http1ClientRequestByteOutput(ByteOutput byteOutput, Function0Void<RuntimeException> onClose) {
+    public Http1ClientRequestByteOutput(ByteOutput byteOutput, Http1ClientRequest request) {
         this.byteOutput = byteOutput;
-        this.onClose = onClose;
+        this.request = request;
     }
 
     @Override
@@ -57,7 +58,7 @@ public final class Http1ClientRequestByteOutput extends AbstractByteOutput {
         this.byteOutput.flush();
 
         closed = true; // 只有成功关闭才算作 关闭
-        onClose.apply();
+        request._setSenderStatus(ScxHttpSenderStatus.SUCCESS);
 
     }
 
