@@ -15,11 +15,11 @@ import dev.scx.io.output.AbstractByteOutput;
 /// @version 0.0.1
 public final class Http1ClientRequestByteOutput extends AbstractByteOutput {
 
-    private final ByteOutput byteOutput;
+    private final Http1ClientConnection connection;
     private final Http1ClientRequest request;
 
-    public Http1ClientRequestByteOutput(ByteOutput byteOutput, Http1ClientRequest request) {
-        this.byteOutput = byteOutput;
+    public Http1ClientRequestByteOutput(Http1ClientConnection connection, Http1ClientRequest request) {
+        this.connection = connection;
         this.request = request;
     }
 
@@ -27,26 +27,21 @@ public final class Http1ClientRequestByteOutput extends AbstractByteOutput {
     public void write(byte b) throws ScxIOException, AlreadyClosedException {
         ensureOpen();
 
-        this.byteOutput.write(b);
+        connection.socketIO.out.write(b);
     }
 
     @Override
     public void write(ByteChunk b) throws ScxIOException, AlreadyClosedException {
         ensureOpen();
 
-        this.byteOutput.write(b);
+        connection.socketIO.out.write(b);
     }
 
     @Override
     public void flush() throws ScxIOException, AlreadyClosedException {
         ensureOpen();
 
-        this.byteOutput.flush();
-    }
-
-    @Override
-    public boolean isClosed() {
-        return closed;
+        connection.socketIO.out.flush();
     }
 
     @Override
@@ -54,15 +49,11 @@ public final class Http1ClientRequestByteOutput extends AbstractByteOutput {
         ensureOpen();
 
         // 这里中断 close, 改为刷新
-        this.byteOutput.flush();
+        connection.socketIO.out.flush();
 
         closed = true; // 只有成功关闭才算作 关闭
         request._setSenderStatus(ScxHttpSenderStatus.SUCCESS);
 
-    }
-
-    public ByteOutput byteOutput() {
-        return byteOutput;
     }
 
 }

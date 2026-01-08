@@ -59,34 +59,6 @@ final class HttpClientHelper {
         }
     }
 
-    /// 失败内部会关闭 Socket
-    public static Http1ClientConnection createHttp1ClientConnection(Socket tcpSocket, Http1ClientConnectionOptions options) throws IOException {
-        try {
-            return new Http1ClientConnection(tcpSocket, options);
-        } catch (IOException e) {
-            try {
-                tcpSocket.close();
-            } catch (IOException ex) {
-                e.addSuppressed(ex);
-            }
-            throw e;
-        }
-    }
-
-    /// 失败内部会关闭 Socket
-    public static Http2ClientConnection createHttp2ClientConnection(Socket tcpSocket, Http2ClientConnectionOptions options) throws IOException {
-        try {
-            return new Http2ClientConnection(tcpSocket, options);
-        } catch (IOException e) {
-            try {
-                tcpSocket.close();
-            } catch (IOException ex) {
-                e.addSuppressed(ex);
-            }
-            throw e;
-        }
-    }
-
     public static boolean checkIsTLS(String scheme) {
         scheme = scheme.toLowerCase();
         return switch (scheme) {

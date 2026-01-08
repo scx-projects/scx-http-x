@@ -216,13 +216,13 @@ public final class Http1Writer {
         var hb = h.getBytes(UTF_8);
 
         // 写入 socket
-        connection.dataWriter.write(hb);
+        connection.socketIO.out.write(hb);
 
         // 只有明确表示 分块的时候才使用分块
         var useChunkedTransfer = headers.transferEncoding() == CHUNKED;
 
         // 创建 基本 输出流
-        var baseByteOutput = new Http1ClientRequestByteOutput(connection.dataWriter, request);
+        var baseByteOutput = new Http1ClientRequestByteOutput(connection, request);
 
         // 判断是否采用分块传输
         return useChunkedTransfer ?
