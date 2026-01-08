@@ -1,10 +1,6 @@
 package dev.scx.http.x;
 
 import dev.scx.http.uri.ScxURI;
-import dev.scx.http.x.http1.Http1ClientConnection;
-import dev.scx.http.x.http1.Http1ClientConnectionOptions;
-import dev.scx.http.x.http2.Http2ClientConnection;
-import dev.scx.http.x.http2.Http2ClientConnectionOptions;
 import dev.scx.tcp.tls.TLS;
 
 import javax.net.ssl.SNIHostName;

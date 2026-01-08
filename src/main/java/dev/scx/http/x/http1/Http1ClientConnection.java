@@ -15,8 +15,6 @@ import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.NoMoreDataException;
 import dev.scx.io.exception.ScxIOException;
 
-import java.io.IOException;
-
 import static dev.scx.http.x.http1.io.Http1Writer.sendRequestHeaders;
 import static dev.scx.io.ScxIO.createByteInput;
 import static dev.scx.io.supplier.ClosePolicyByteSupplier.noCloseDrain;
