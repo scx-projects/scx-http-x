@@ -4,6 +4,8 @@ import dev.scx.function.Function1Void;
 import dev.scx.http.ScxHttpServer;
 import dev.scx.http.ScxHttpServerRequest;
 import dev.scx.http.error_handler.ScxHttpServerErrorHandler;
+import dev.scx.http.x.http1.Http1ServerConnection;
+import dev.scx.http.x.http2.Http2ServerConnection;
 import dev.scx.tcp.ScxTCPServer;
 import dev.scx.tcp.TCPServer;
 
@@ -18,6 +20,7 @@ import java.util.List;
 import static dev.scx.http.version.HttpVersion.HTTP_1_1;
 import static dev.scx.http.version.HttpVersion.HTTP_2;
 import static dev.scx.http.x.HttpServerHelper.*;
+import static dev.scx.http.x.SocketIOHelper.createSocketIO;
 import static java.lang.System.Logger.Level.TRACE;
 
 /// Http 服务器
@@ -70,30 +73,30 @@ public final class HttpServer implements ScxHttpServer {
             }
         }
 
-        // 2, 检测是否使用 Http2
+        // 2, 创建 SocketIO.
+        SocketIO socketIO;
+        try {
+            socketIO = createSocketIO(tcpSocket);
+        } catch (IOException e) {
+            // 这里的异常是是 获取 流 时异常 无需处理.
+            return;
+        }
+
+        // 3, 检测是否使用 Http2
         var useHttp2 = false;
 
-        if (tcpSocket instanceof SSLSocket sslSocket) {
+        if (socketIO.tcpSocket instanceof SSLSocket sslSocket) {
             var applicationProtocol = sslSocket.getApplicationProtocol();
             useHttp2 = HTTP_2.alpnValue().equals(applicationProtocol);
         }
 
-        // 3, 根据协议不同选择不同的连接处理器
+        // 4, 根据协议不同选择不同的连接处理器
         if (useHttp2) {
-            try (var http2ServerConnection = createHttp2ServerConnection(tcpSocket, options.http2ServerConnectionOptions(), requestHandler, errorHandler)) {
-                // start 为阻塞方法
-                http2ServerConnection.start();
-            } catch (IOException _) {
-                // 这里的异常是一般是 获取流 或者 Socket.close() 异常 无需处理
-            }
+            var http2ServerConnection = new Http2ServerConnection(socketIO, options.http2ServerConnectionOptions(), requestHandler, errorHandler);
+            http2ServerConnection.start();
         } else {
-            // 此处的 Http1 特指 HTTP/1.1
-            try (var http1ServerConnection = createHttp1ServerConnection(tcpSocket, options.http1ServerConnectionOptions(), requestHandler, errorHandler)) {
-                // start 为阻塞方法
-                http1ServerConnection.start();
-            } catch (IOException _) {
-                // 这里的异常是一般是 获取流 或者 Socket.close() 异常 无需处理
-            }
+            var http1ServerConnection = new Http1ServerConnection(socketIO, options.http1ServerConnectionOptions(), requestHandler, errorHandler);
+            http1ServerConnection.start();
         }
 
     }
