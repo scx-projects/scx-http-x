@@ -61,12 +61,13 @@ public final class Http1ServerConnection implements AutoCloseable {
 
     /// 启动虚拟线程进行读取.
     public void start() {
-
-        // 创建虚拟线程 处理请求
-        Thread.ofVirtual()
-            .name(threadName)
-            .start(this::handle);
-
+        // 我们根据 socketIO 是否还被持有 来决定是否读取
+        if (attached) {
+            // 创建虚拟线程 处理请求
+            Thread.ofVirtual()
+                .name(threadName)
+                .start(this::handle);
+        }
     }
 
     public void handle() {
