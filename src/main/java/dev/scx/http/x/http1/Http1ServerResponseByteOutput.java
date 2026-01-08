@@ -1,8 +1,6 @@
-package dev.scx.http.x.http1.io;
+package dev.scx.http.x.http1;
 
 import dev.scx.http.sender.ScxHttpSenderStatus;
-import dev.scx.http.x.http1.Http1ServerConnection;
-import dev.scx.http.x.http1.Http1ServerResponse;
 import dev.scx.io.ByteChunk;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.ScxIOException;
