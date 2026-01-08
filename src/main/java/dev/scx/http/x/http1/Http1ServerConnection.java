@@ -48,7 +48,7 @@ public final class Http1ServerConnection implements AutoCloseable {
     private final Function1Void<ScxHttpServerRequest, ?> requestHandler;
     private final ScxHttpServerErrorHandler errorHandler;
     private final String threadName;
-    private boolean attached;// 是否拥有 Socket
+    private boolean ownsSocket; // 是否拥有 Socket
 
     public Http1ServerConnection(SocketIO socketIO, Http1ServerConnectionOptions options, Function1Void<ScxHttpServerRequest, ?> requestHandler, ScxHttpServerErrorHandler errorHandler) {
         this.socketIO = socketIO;
@@ -56,13 +56,13 @@ public final class Http1ServerConnection implements AutoCloseable {
         this.requestHandler = requestHandler;
         this.errorHandler = errorHandler;
         this.threadName = "Http1ServerConnection-Handler-" + socketIO.tcpSocket.getRemoteSocketAddress();
-        this.attached = true;
+        this.ownsSocket = true;
     }
 
     /// 启动虚拟线程进行读取.
     public void start() {
         // 我们根据 socketIO 是否还被持有 来决定是否读取
-        if (attached) {
+        if (ownsSocket) {
             // 创建虚拟线程 处理请求
             Thread.ofVirtual()
                 .name(threadName)
@@ -70,7 +70,12 @@ public final class Http1ServerConnection implements AutoCloseable {
         }
     }
 
-    public void handle() {
+    /// 交接 Socket
+    public void transferSocketIO() {
+        ownsSocket = false;
+    }
+
+    private void handle() {
         // 开始读取 Http 请求
 
         // 1, 我们先读取请求 (只要是在 读取 Request 阶段发生错误, 我们就认为当前连接应该直接作废.)
@@ -155,11 +160,6 @@ public final class Http1ServerConnection implements AutoCloseable {
         return new Http1ServerRequest(this, requestLine, headers, bodyByteInput);
     }
 
-    /// 交接 Socket
-    public void detach() {
-        attached = false;
-    }
-
     /// 处理系统级别错误
     private void handlerSystemException(Throwable e) {
         // 此时我们并没有拿到一个完整的 request 对象 所以这里创建一个 虚拟 request 用于后续响应
@@ -200,7 +200,7 @@ public final class Http1ServerConnection implements AutoCloseable {
     @Override
     public void close() throws IOException {
         // 只有在拥有 socket 所有权的情况下 我们才 close()
-        if (attached) {
+        if (ownsSocket) {
             socketIO.close();
         }
     }
