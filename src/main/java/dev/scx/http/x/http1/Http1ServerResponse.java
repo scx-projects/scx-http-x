@@ -13,7 +13,6 @@ import dev.scx.io.ByteOutput;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.ScxIOException;
 
-import java.io.IOException;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static dev.scx.http.sender.ScxHttpSenderStatus.FAILED;
@@ -102,12 +101,8 @@ public final class Http1ServerResponse implements ScxHttpServerResponse {
         } catch (ScxIOException | AlreadyClosedException e) {
             // 标记发送失败
             senderStatus = FAILED;
-            // 终止 connection 读取  todo 这里 是不是应该直接关闭 socketIO 而不是 connection
-            try {
-                connection.close();
-            } catch (IOException _) {
-                // 忽略这里的错误
-            }
+            // 直接终止 底层 Socket 连接
+            connection.socketIO.closeQuietly();
             throw e;
         }
 
@@ -116,12 +111,8 @@ public final class Http1ServerResponse implements ScxHttpServerResponse {
         } catch (ScxIOException e) {
             // 标记发送失败
             senderStatus = FAILED;
-            // 终止 connection 读取  todo 这里 是不是应该直接关闭 socketIO 而不是 connection (同上)
-            try {
-                connection.close();
-            } catch (IOException _) {
-                // 忽略这里的错误
-            }
+            // 直接终止 底层 Socket 连接
+            connection.socketIO.closeQuietly();
             throw e;
         } catch (AlreadyClosedException e) {
             throw new IllegalSenderStateException(senderStatus);

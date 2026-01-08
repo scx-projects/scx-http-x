@@ -18,7 +18,6 @@ import dev.scx.io.exception.NoMoreDataException;
 import dev.scx.io.exception.ScxIOException;
 import dev.scx.io.input.NullByteInput;
 
-import java.io.IOException;
 import java.lang.System.Logger;
 
 import static dev.scx.http.error_handler.ErrorPhase.SYSTEM;
@@ -37,7 +36,7 @@ import static java.lang.System.getLogger;
 ///
 /// @author scx567888
 /// @version 0.0.1
-public final class Http1ServerConnection implements AutoCloseable {
+public final class Http1ServerConnection {
 
     private final static Logger LOGGER = getLogger(Http1ServerConnection.class.getName());
 
@@ -84,21 +83,13 @@ public final class Http1ServerConnection implements AutoCloseable {
             request = readRequest();
         } catch (ScxIOException | AlreadyClosedException | NoMoreDataException e) {
             // 如果是 IO 类异常 直接终止, 其余都不做, 甚至不打印日志 (因为完全属于干扰项).
-            try {
-                socketIO.close();
-            } catch (IOException _) {
-                // 忽略此处的异常.
-            }
+            socketIO.closeQuietly();
             return;
         } catch (Throwable e) {
             // 其余异常, 我们尝试 响应到远端.
             // 2, 调用系统错误处理器 (尽可能的向远端发送信息)
             handlerSystemException(e);
-            try {
-                socketIO.close();
-            } catch (IOException _) {
-                // 忽略此处的异常.
-            }
+            socketIO.closeQuietly();
             return;
         }
 
@@ -195,14 +186,6 @@ public final class Http1ServerConnection implements AutoCloseable {
             LOGGER.log(DEBUG, e);
         }
 
-    }
-
-    @Override
-    public void close() throws IOException {
-        // 只有在拥有 socket 所有权的情况下 我们才 close()
-        if (ownsSocket) {
-            socketIO.close();
-        }
     }
 
 }
