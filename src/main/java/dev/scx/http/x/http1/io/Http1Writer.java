@@ -183,7 +183,7 @@ public final class Http1Writer {
         if (expectedLength < 0) {// 表示不知道 body 的长度
             // 如果用户已经手动设置了 Content-Length, 我们便不再设置 分块传输
             if (headers.contentLength() == null) {
-                // todo 这里在 NullContentByteSupplier 会写入 多余的 CHUNKED 怎么处理?
+                // todo 这里在 NullContentByteSupplier 会写入 多余的 CHUNKED 怎么处理? 问题参看代理示例
                 headers.transferEncoding(CHUNKED);
             } else {
                 // 否则使用用户已经设置的 contentLength
