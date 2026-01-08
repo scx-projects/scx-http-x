@@ -18,7 +18,6 @@ import dev.scx.io.exception.ScxIOException;
 import static dev.scx.http.headers.HttpHeaderName.HOST;
 import static dev.scx.http.method.HttpMethod.*;
 import static dev.scx.http.sender.ScxHttpSenderStatus.SENDING;
-import static dev.scx.http.sender.ScxHttpSenderStatus.SUCCESS;
 import static dev.scx.http.status_code.HttpStatusCode.*;
 import static dev.scx.http.status_code.ScxHttpStatusCodeHelper.getReasonPhrase;
 import static dev.scx.http.x.http1.headers.connection.Connection.CLOSE;
@@ -142,7 +141,7 @@ public final class Http1Writer {
         var hb = h.getBytes(UTF_8);
 
         // 写入 socket
-        connection.dataWriter.write(hb);
+        connection.socketIO.out.write(hb);
 
         // 只有明确表示 close 的时候我们才关闭
         var closeConnection = headers.connection() == CLOSE;
@@ -151,7 +150,7 @@ public final class Http1Writer {
         var useChunkedTransfer = headers.transferEncoding() == CHUNKED;
 
         // 创建 基本 输出流
-        var baseByteOutput = new Http1ServerResponseByteOutput(connection, closeConnection, () -> response._setSenderStatus(SUCCESS));
+        var baseByteOutput = new Http1ServerResponseByteOutput(connection, closeConnection, response);
 
         // 判断是否采用分块传输
         return useChunkedTransfer ?
@@ -226,7 +225,7 @@ public final class Http1Writer {
         var useChunkedTransfer = headers.transferEncoding() == CHUNKED;
 
         // 创建 基本 输出流
-        var baseByteOutput = new Http1ClientRequestByteOutput(connection.dataWriter, () -> request._setSenderStatus(SUCCESS));
+        var baseByteOutput = new Http1ClientRequestByteOutput(connection.dataWriter, request);
 
         // 判断是否采用分块传输
         return useChunkedTransfer ?
