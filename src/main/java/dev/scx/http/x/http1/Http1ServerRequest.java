@@ -39,8 +39,8 @@ public final class Http1ServerRequest implements ScxHttpServerRequest {
         this.version = requestLine.httpVersion();
         this.headers = headers;
         this.body = new Http1Body(bodyByteInput, this.headers);
-        this.remotePeer = getRemotePeer(connection.tcpSocket);
-        this.localPeer = getLocalPeer(connection.tcpSocket);
+        this.remotePeer = getRemotePeer(connection.socketIO.tcpSocket);
+        this.localPeer = getLocalPeer(connection.socketIO.tcpSocket);
         this.response = new Http1ServerResponse(connection, this);
     }
 
