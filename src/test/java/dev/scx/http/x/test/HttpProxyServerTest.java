@@ -32,7 +32,7 @@ public class HttpProxyServerTest {
                 //1, 获取连接对象
                 var serverConnection = request.connection;
                 //2, 交接 Socket 所有权
-                serverConnection.detach();
+                serverConnection.transferSocketIO();
                 //3, 获取 当前连接的 底层 tcpSocket 内容
                 var serverTCPSocket = serverConnection.socketIO.tcpSocket;
                 //4, 创建 远端连接
