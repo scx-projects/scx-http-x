@@ -18,13 +18,13 @@ import dev.scx.io.exception.NoMoreDataException;
 import dev.scx.io.exception.ScxIOException;
 import dev.scx.io.input.NullByteInput;
 
-import java.io.IOException;
 import java.lang.System.Logger;
 
 import static dev.scx.http.error_handler.ErrorPhase.SYSTEM;
 import static dev.scx.http.error_handler.ErrorPhase.USER;
 import static dev.scx.http.x.error_handler.DefaultHttpServerErrorHandler.DEFAULT_HTTP_SERVER_ERROR_HANDLER;
-import static dev.scx.http.x.http1.Http1ServerConnectionHelper.*;
+import static dev.scx.http.x.http1.Http1ServerConnectionHelper.checkUpgradeRequest;
+import static dev.scx.http.x.http1.Http1ServerConnectionHelper.validateHost;
 import static dev.scx.http.x.http1.headers.connection.Connection.CLOSE;
 import static dev.scx.http.x.http1.headers.expect.Expect.CONTINUE;
 import static dev.scx.http.x.http1.io.AutoContinueByteSupplier.sendContinue100;
@@ -37,7 +37,7 @@ import static java.lang.System.getLogger;
 ///
 /// @author scx567888
 /// @version 0.0.1
-public final class Http1ServerConnection implements AutoCloseable {
+public final class Http1ServerConnection {
 
     private final static Logger LOGGER = getLogger(Http1ServerConnection.class.getName());
 
@@ -48,7 +48,7 @@ public final class Http1ServerConnection implements AutoCloseable {
     private final Function1Void<ScxHttpServerRequest, ?> requestHandler;
     private final ScxHttpServerErrorHandler errorHandler;
     private final String threadName;
-    private boolean attached;// 是否拥有 Socket
+    private boolean ownsSocket; // 是否拥有 Socket
 
     public Http1ServerConnection(SocketIO socketIO, Http1ServerConnectionOptions options, Function1Void<ScxHttpServerRequest, ?> requestHandler, ScxHttpServerErrorHandler errorHandler) {
         this.socketIO = socketIO;
@@ -56,13 +56,13 @@ public final class Http1ServerConnection implements AutoCloseable {
         this.requestHandler = requestHandler;
         this.errorHandler = errorHandler;
         this.threadName = "Http1ServerConnection-Handler-" + socketIO.tcpSocket.getRemoteSocketAddress();
-        this.attached = true;
+        this.ownsSocket = true;
     }
 
     /// 启动虚拟线程进行读取.
     public void start() {
         // 我们根据 socketIO 是否还被持有 来决定是否读取
-        if (attached) {
+        if (ownsSocket) {
             // 创建虚拟线程 处理请求
             Thread.ofVirtual()
                 .name(threadName)
@@ -70,7 +70,12 @@ public final class Http1ServerConnection implements AutoCloseable {
         }
     }
 
-    public void handle() {
+    /// 交接 Socket
+    public void transferSocketIO() {
+        ownsSocket = false;
+    }
+
+    private void handle() {
         // 开始读取 Http 请求
 
         // 1, 我们先读取请求 (只要是在 读取 Request 阶段发生错误, 我们就认为当前连接应该直接作废.)
@@ -79,21 +84,13 @@ public final class Http1ServerConnection implements AutoCloseable {
             request = readRequest();
         } catch (ScxIOException | AlreadyClosedException | NoMoreDataException e) {
             // 如果是 IO 类异常 直接终止, 其余都不做, 甚至不打印日志 (因为完全属于干扰项).
-            try {
-                socketIO.close();
-            } catch (IOException _) {
-                // 忽略此处的异常.
-            }
+            socketIO.closeQuietly();
             return;
         } catch (Throwable e) {
             // 其余异常, 我们尝试 响应到远端.
             // 2, 调用系统错误处理器 (尽可能的向远端发送信息)
             handlerSystemException(e);
-            try {
-                socketIO.close();
-            } catch (IOException _) {
-                // 忽略此处的异常.
-            }
+            socketIO.closeQuietly();
             return;
         }
 
@@ -155,11 +152,6 @@ public final class Http1ServerConnection implements AutoCloseable {
         return new Http1ServerRequest(this, requestLine, headers, bodyByteInput);
     }
 
-    /// 交接 Socket
-    public void detach() {
-        attached = false;
-    }
-
     /// 处理系统级别错误
     private void handlerSystemException(Throwable e) {
         // 此时我们并没有拿到一个完整的 request 对象 所以这里创建一个 虚拟 request 用于后续响应
@@ -195,14 +187,6 @@ public final class Http1ServerConnection implements AutoCloseable {
             LOGGER.log(DEBUG, e);
         }
 
-    }
-
-    @Override
-    public void close() throws IOException {
-        // 只有在拥有 socket 所有权的情况下 我们才 close()
-        if (attached) {
-            socketIO.close();
-        }
     }
 
 }

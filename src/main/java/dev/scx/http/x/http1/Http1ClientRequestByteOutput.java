@@ -2,7 +2,6 @@ package dev.scx.http.x.http1;
 
 import dev.scx.http.sender.ScxHttpSenderStatus;
 import dev.scx.io.ByteChunk;
-import dev.scx.io.ByteOutput;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.ScxIOException;
 import dev.scx.io.output.AbstractByteOutput;

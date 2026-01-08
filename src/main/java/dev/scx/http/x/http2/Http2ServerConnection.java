@@ -5,10 +5,8 @@ import dev.scx.http.ScxHttpServerRequest;
 import dev.scx.http.error_handler.ScxHttpServerErrorHandler;
 import dev.scx.http.x.SocketIO;
 
-import java.io.IOException;
-
 /// 占位 (可能永远都不会实现)
-public class Http2ServerConnection implements AutoCloseable {
+public class Http2ServerConnection {
 
     private final SocketIO socketIO;
 
@@ -18,11 +16,6 @@ public class Http2ServerConnection implements AutoCloseable {
 
     public void start() {
         throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    @Override
-    public void close() throws IOException {
-        socketIO.close();
     }
 
 }

@@ -6,8 +6,6 @@ import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.ScxIOException;
 import dev.scx.io.output.AbstractByteOutput;
 
-import java.io.IOException;
-
 import static dev.scx.http.x.http1.Http1ServerConnectionHelper.consumeBodyByteInput;
 
 /// Http1ServerResponseByteOutput
@@ -54,12 +52,8 @@ public final class Http1ServerResponseByteOutput extends AbstractByteOutput {
         ensureOpen();
 
         if (closeConnection) {
-            // 如果明确表示 close 我们终止 连接
-            try {
-                this.connection.close();
-            } catch (IOException e) {
-                throw new ScxIOException(e);
-            }
+            // 如果明确表示 close 我们终止 底层 Socket 连接
+            this.connection.socketIO.closeQuietly();
         } else {
             // 否则只是刷新
             connection.socketIO.out.flush();

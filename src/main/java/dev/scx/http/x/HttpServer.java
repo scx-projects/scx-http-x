@@ -19,7 +19,7 @@ import java.util.List;
 
 import static dev.scx.http.version.HttpVersion.HTTP_1_1;
 import static dev.scx.http.version.HttpVersion.HTTP_2;
-import static dev.scx.http.x.HttpServerHelper.*;
+import static dev.scx.http.x.HttpServerHelper.configServerTLS;
 import static dev.scx.http.x.SocketIOHelper.createSocketIO;
 import static java.lang.System.Logger.Level.TRACE;
 

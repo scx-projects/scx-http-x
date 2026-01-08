@@ -26,4 +26,12 @@ public final class SocketIO implements AutoCloseable {
         this.tcpSocket.close();
     }
 
+    public void closeQuietly() {
+        try {
+            this.close();
+        } catch (IOException _) {
+            // 忽略关闭的异常
+        }
+    }
+
 }
