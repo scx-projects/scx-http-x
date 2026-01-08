@@ -3,10 +3,7 @@ package dev.scx.http.x.http1.io;
 import dev.scx.http.method.ScxHttpMethod;
 import dev.scx.http.status_code.ScxHttpStatusCode;
 import dev.scx.http.uri.ScxURI;
-import dev.scx.http.x.http1.Http1ClientConnection;
-import dev.scx.http.x.http1.Http1ClientRequest;
-import dev.scx.http.x.http1.Http1ServerRequest;
-import dev.scx.http.x.http1.Http1ServerResponse;
+import dev.scx.http.x.http1.*;
 import dev.scx.http.x.http1.headers.Http1Headers;
 import dev.scx.http.x.http1.request_line.Http1RequestLine;
 import dev.scx.http.x.http1.request_line.request_target.*;
@@ -18,7 +15,6 @@ import dev.scx.io.exception.ScxIOException;
 import static dev.scx.http.headers.HttpHeaderName.HOST;
 import static dev.scx.http.method.HttpMethod.*;
 import static dev.scx.http.sender.ScxHttpSenderStatus.SENDING;
-import static dev.scx.http.sender.ScxHttpSenderStatus.SUCCESS;
 import static dev.scx.http.status_code.HttpStatusCode.*;
 import static dev.scx.http.status_code.ScxHttpStatusCodeHelper.getReasonPhrase;
 import static dev.scx.http.x.http1.headers.connection.Connection.CLOSE;
@@ -142,7 +138,7 @@ public final class Http1Writer {
         var hb = h.getBytes(UTF_8);
 
         // 写入 socket
-        connection.dataWriter.write(hb);
+        connection.socketIO.out.write(hb);
 
         // 只有明确表示 close 的时候我们才关闭
         var closeConnection = headers.connection() == CLOSE;
@@ -151,7 +147,7 @@ public final class Http1Writer {
         var useChunkedTransfer = headers.transferEncoding() == CHUNKED;
 
         // 创建 基本 输出流
-        var baseByteOutput = new Http1ServerResponseByteOutput(connection, closeConnection, () -> response._setSenderStatus(SUCCESS));
+        var baseByteOutput = new Http1ServerResponseByteOutput(connection, closeConnection, response);
 
         // 判断是否采用分块传输
         return useChunkedTransfer ?
@@ -187,6 +183,7 @@ public final class Http1Writer {
         if (expectedLength < 0) {// 表示不知道 body 的长度
             // 如果用户已经手动设置了 Content-Length, 我们便不再设置 分块传输
             if (headers.contentLength() == null) {
+                // todo 这里在 NullContentByteSupplier 会写入 多余的 CHUNKED 怎么处理? 问题参看代理示例
                 headers.transferEncoding(CHUNKED);
             } else {
                 // 否则使用用户已经设置的 contentLength
@@ -220,13 +217,13 @@ public final class Http1Writer {
         var hb = h.getBytes(UTF_8);
 
         // 写入 socket
-        connection.dataWriter.write(hb);
+        connection.socketIO.out.write(hb);
 
         // 只有明确表示 分块的时候才使用分块
         var useChunkedTransfer = headers.transferEncoding() == CHUNKED;
 
         // 创建 基本 输出流
-        var baseByteOutput = new Http1ClientRequestByteOutput(connection.dataWriter, () -> request._setSenderStatus(SUCCESS));
+        var baseByteOutput = new Http1ClientRequestByteOutput(connection, request);
 
         // 判断是否采用分块传输
         return useChunkedTransfer ?

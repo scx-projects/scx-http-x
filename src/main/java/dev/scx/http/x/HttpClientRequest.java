@@ -11,7 +11,9 @@ import dev.scx.http.sender.ScxHttpSenderStatus;
 import dev.scx.http.uri.ScxURI;
 import dev.scx.http.uri.ScxURIWritable;
 import dev.scx.http.version.HttpVersion;
+import dev.scx.http.x.http1.Http1ClientConnection;
 import dev.scx.http.x.http1.Http1ClientRequest;
+import dev.scx.http.x.http2.Http2ClientConnection;
 import dev.scx.http.x.http2.Http2ClientRequest;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.ScxIOException;
@@ -25,8 +27,7 @@ import static dev.scx.http.method.HttpMethod.GET;
 import static dev.scx.http.sender.ScxHttpSenderStatus.NOT_SENT;
 import static dev.scx.http.version.HttpVersion.HTTP_1_1;
 import static dev.scx.http.version.HttpVersion.HTTP_2;
-import static dev.scx.http.x.HttpClientHelper.createHttp1ClientConnection;
-import static dev.scx.http.x.HttpClientHelper.createHttp2ClientConnection;
+import static dev.scx.http.x.SocketIOHelper.createSocketIO;
 
 /// 支持动态 选择协议的 Request (只支持发送一次).
 ///
@@ -71,29 +72,29 @@ public final class HttpClientRequest implements Http1ClientRequest, Http2ClientR
             throw new ScxIOException("创建连接失败 !!!", e);
         }
 
+        SocketIO socketIO;
+
+        try {
+            socketIO = createSocketIO(tcpSocket);
+        } catch (IOException e) {
+            throw new ScxIOException("创建 SocketIO 失败 !!!", e);
+        }
+
         var useHttp2 = false;
 
-        if (tcpSocket instanceof SSLSocket sslSocket) {
+        if (socketIO.tcpSocket instanceof SSLSocket sslSocket) {
             var applicationProtocol = sslSocket.getApplicationProtocol();
             useHttp2 = "h2".equals(applicationProtocol);
         }
 
         if (useHttp2) {
-            try {
-                return createHttp2ClientConnection(tcpSocket, options.http2ClientConnectionOptions()).sendRequest(this, mediaWriter).waitResponse();
-            } catch (IOException e) {
-                throw new ScxIOException("发送 HTTP 请求失败 !!!", e);
-            }
+            return new Http2ClientConnection(socketIO, options.http2ClientConnectionOptions()).sendRequest(this, mediaWriter).waitResponse();
         } else {
             // 仅当 http 协议 (不是 SSL) 并且开启代理的时候才使用 绝对路径
-            if (!(tcpSocket instanceof SSLSocket) && options.proxy() != null) {
+            if (!(socketIO.tcpSocket instanceof SSLSocket) && options.proxy() != null) {
                 this.useProxy = true;
             }
-            try {
-                return createHttp1ClientConnection(tcpSocket, options.http1ClientConnectionOptions()).sendRequest(this, mediaWriter).waitResponse();
-            } catch (IOException e) {
-                throw new ScxIOException("发送 HTTP 请求失败 !!!", e);
-            }
+            return new Http1ClientConnection(socketIO, options.http1ClientConnectionOptions()).sendRequest(this, mediaWriter).waitResponse();
         }
 
     }

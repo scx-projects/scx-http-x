@@ -6,14 +6,13 @@ import dev.scx.http.error_handler.ScxHttpServerErrorHandler;
 import dev.scx.http.exception.BadRequestException;
 import dev.scx.http.method.ScxHttpMethod;
 import dev.scx.http.parameters.Parameters;
+import dev.scx.http.x.SocketIO;
 import dev.scx.http.x.http1.headers.Http1Headers;
 import dev.scx.http.x.http1.io.*;
 import dev.scx.http.x.http1.request_line.Http1RequestLine;
 import dev.scx.http.x.http1.request_line.InvalidRequestLineException;
 import dev.scx.http.x.http1.request_line.InvalidRequestLineHttpVersionException;
 import dev.scx.http.x.http1.request_line.request_target.OriginForm;
-import dev.scx.io.ByteInput;
-import dev.scx.io.ByteOutput;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.NoMoreDataException;
 import dev.scx.io.exception.ScxIOException;
@@ -21,17 +20,15 @@ import dev.scx.io.input.NullByteInput;
 
 import java.io.IOException;
 import java.lang.System.Logger;
-import java.net.Socket;
 
-import static dev.scx.http.x.error_handler.DefaultHttpServerErrorHandler.DEFAULT_HTTP_SERVER_ERROR_HANDLER;
 import static dev.scx.http.error_handler.ErrorPhase.SYSTEM;
 import static dev.scx.http.error_handler.ErrorPhase.USER;
+import static dev.scx.http.x.error_handler.DefaultHttpServerErrorHandler.DEFAULT_HTTP_SERVER_ERROR_HANDLER;
 import static dev.scx.http.x.http1.Http1ServerConnectionHelper.*;
 import static dev.scx.http.x.http1.headers.connection.Connection.CLOSE;
 import static dev.scx.http.x.http1.headers.expect.Expect.CONTINUE;
 import static dev.scx.http.x.http1.io.AutoContinueByteSupplier.sendContinue100;
 import static dev.scx.io.ScxIO.createByteInput;
-import static dev.scx.io.ScxIO.createByteOutput;
 import static dev.scx.io.supplier.ClosePolicyByteSupplier.noCloseDrain;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.getLogger;
@@ -45,71 +42,67 @@ public final class Http1ServerConnection implements AutoCloseable {
     private final static Logger LOGGER = getLogger(Http1ServerConnection.class.getName());
 
     /// 对外公开 tcpSocket 字段, 以便 实现更底层功能.
-    public final Socket tcpSocket;
-    /// 对外公开 dataReader 字段, 以便 实现更底层功能.
-    public final ByteInput dataReader;
-    /// 对外公开 dataWriter 字段, 以便 实现更底层功能.
-    public final ByteOutput dataWriter;
+    public final SocketIO socketIO;
 
     private final Http1ServerConnectionOptions options;
     private final Function1Void<ScxHttpServerRequest, ?> requestHandler;
     private final ScxHttpServerErrorHandler errorHandler;
-    private boolean running; // 是否处于读取状态
+    private final String threadName;
     private boolean attached;// 是否拥有 Socket
 
-    public Http1ServerConnection(Socket tcpSocket, Http1ServerConnectionOptions options, Function1Void<ScxHttpServerRequest, ?> requestHandler, ScxHttpServerErrorHandler errorHandler) throws IOException {
-        this.tcpSocket = tcpSocket;
-        this.dataReader = createByteInput(this.tcpSocket.getInputStream());
-        this.dataWriter = createByteOutput(this.tcpSocket.getOutputStream());
+    public Http1ServerConnection(SocketIO socketIO, Http1ServerConnectionOptions options, Function1Void<ScxHttpServerRequest, ?> requestHandler, ScxHttpServerErrorHandler errorHandler) {
+        this.socketIO = socketIO;
         this.options = options;
         this.requestHandler = requestHandler;
         this.errorHandler = errorHandler;
-        this.running = true;
+        this.threadName = "Http1ServerConnection-Handler-" + socketIO.tcpSocket.getRemoteSocketAddress();
         this.attached = true;
     }
 
-    /// 这里我们只需要阻塞读取 无法处理跳出循环即可. 无需主动关闭 tcpSocket.
+    /// 启动虚拟线程进行读取.
     public void start() {
+        // 我们根据 socketIO 是否还被持有 来决定是否读取
+        if (attached) {
+            // 创建虚拟线程 处理请求
+            Thread.ofVirtual()
+                .name(threadName)
+                .start(this::handle);
+        }
+    }
 
+    public void handle() {
         // 开始读取 Http 请求
-        while (running) {
 
-            // 1, 我们先读取请求 (只要是在 读取 Request 阶段发生错误, 我们就认为当前连接应该直接作废.)
-            ScxHttpServerRequest request;
+        // 1, 我们先读取请求 (只要是在 读取 Request 阶段发生错误, 我们就认为当前连接应该直接作废.)
+        ScxHttpServerRequest request;
+        try {
+            request = readRequest();
+        } catch (ScxIOException | AlreadyClosedException | NoMoreDataException e) {
+            // 如果是 IO 类异常 直接终止, 其余都不做, 甚至不打印日志 (因为完全属于干扰项).
             try {
-                request = readRequest();
-            } catch (ScxIOException | AlreadyClosedException | NoMoreDataException e) {
-                // 如果是 IO 类异常 直接终止, 其余都不做, 甚至不打印日志 (因为完全属于干扰项).
-                // 1, 调用 stop 标记 循环终止.
-                stop();
-                // 2, 跳出循环
-                break;
-            } catch (Throwable e) {
-                // 其余异常, 我们尝试 响应到远端.
-                // 1, 调用 stop 标记 循环终止.
-                stop();
-                // 2, 调用系统错误处理器 (尽可能的向远端发送信息)
-                handlerSystemException(e);
-                // 3, 跳出循环
-                break;
+                socketIO.close();
+            } catch (IOException _) {
+                // 忽略此处的异常.
             }
-
-            // 2, 交由用户处理器处理
+            return;
+        } catch (Throwable e) {
+            // 其余异常, 我们尝试 响应到远端.
+            // 2, 调用系统错误处理器 (尽可能的向远端发送信息)
+            handlerSystemException(e);
             try {
-                requestHandler.apply(request);
-            } catch (Throwable e) {
-                // 用户处理器 错误 我们尝试恢复
-                handlerUserException(e, request);
-            } finally {
-
-                // 3, 如果 还是 running 说明需要继续复用当前 tcp 连接, 并进行下一次 Request 的读取
-                if (running) {
-                    // 4, 用户处理器可能没有消费完请求体 这里我们帮助消费用户未消费的数据
-                    consumeBodyByteInput(request.body().byteInput());
-                }
-
+                socketIO.close();
+            } catch (IOException _) {
+                // 忽略此处的异常.
             }
+            return;
+        }
 
+        // 2, 交由用户处理器处理
+        try {
+            requestHandler.apply(request);
+        } catch (Throwable e) {
+            // 用户处理器 错误 我们尝试响应
+            handlerUserException(e, request);
         }
 
     }
@@ -117,13 +110,13 @@ public final class Http1ServerConnection implements AutoCloseable {
     /// 读取 请求
     private ScxHttpServerRequest readRequest() throws ScxIOException, AlreadyClosedException, NoMoreDataException, InvalidRequestLineException, InvalidRequestLineHttpVersionException, RequestLineTooLongException, HeaderTooLargeException, ContentLengthBodyTooLargeException, BadRequestException {
         // 1, 读取 请求行
-        var requestLine = Http1Reader.readRequestLine(dataReader, options.maxRequestLineSize());
+        var requestLine = Http1Reader.readRequestLine(socketIO.in, options.maxRequestLineSize());
 
         // 2, 读取 请求头
-        var headers = Http1Reader.readHeaders(dataReader, options.maxHeaderSize());
+        var headers = Http1Reader.readHeaders(socketIO.in, options.maxHeaderSize());
 
         // 3, 读取 请求体流
-        var bodyByteSupplier = Http1Reader.readBodyByteInput(headers, dataReader, options.maxPayloadSize());
+        var bodyByteSupplier = Http1Reader.readBodyByteInput(headers, socketIO.in, options.maxPayloadSize());
 
         // 4, 在交给用户处理器进行处理之前, 我们需要做一些预处理
 
@@ -136,10 +129,10 @@ public final class Http1ServerConnection implements AutoCloseable {
         if (headers.expect() == CONTINUE) {
             // 如果启用了自动响应 我们直接发送
             if (options.autoRespond100Continue()) {
-                sendContinue100(dataWriter);
+                sendContinue100(socketIO.out);
             } else {
                 // 否则交给用户去处理
-                bodyByteSupplier = new AutoContinueByteSupplier(bodyByteSupplier, dataWriter);
+                bodyByteSupplier = new AutoContinueByteSupplier(bodyByteSupplier, socketIO.out);
             }
         }
 
@@ -162,14 +155,8 @@ public final class Http1ServerConnection implements AutoCloseable {
         return new Http1ServerRequest(this, requestLine, headers, bodyByteInput);
     }
 
-    /// 停止读取 http 请求
-    public void stop() {
-        running = false;
-    }
-
-    /// 交接 Socket, 同时也会 stop()
+    /// 交接 Socket
     public void detach() {
-        stop();
         attached = false;
     }
 
@@ -214,7 +201,7 @@ public final class Http1ServerConnection implements AutoCloseable {
     public void close() throws IOException {
         // 只有在拥有 socket 所有权的情况下 我们才 close()
         if (attached) {
-            tcpSocket.close();
+            socketIO.close();
         }
     }
 

@@ -1,6 +1,6 @@
-package dev.scx.http.x.http1.io;
+package dev.scx.http.x.http1;
 
-import dev.scx.function.Function0Void;
+import dev.scx.http.sender.ScxHttpSenderStatus;
 import dev.scx.io.ByteChunk;
 import dev.scx.io.ByteOutput;
 import dev.scx.io.exception.AlreadyClosedException;
@@ -15,38 +15,33 @@ import dev.scx.io.output.AbstractByteOutput;
 /// @version 0.0.1
 public final class Http1ClientRequestByteOutput extends AbstractByteOutput {
 
-    private final ByteOutput byteOutput;
-    private final Function0Void<RuntimeException> onClose;
+    private final Http1ClientConnection connection;
+    private final Http1ClientRequest request;
 
-    public Http1ClientRequestByteOutput(ByteOutput byteOutput, Function0Void<RuntimeException> onClose) {
-        this.byteOutput = byteOutput;
-        this.onClose = onClose;
+    public Http1ClientRequestByteOutput(Http1ClientConnection connection, Http1ClientRequest request) {
+        this.connection = connection;
+        this.request = request;
     }
 
     @Override
     public void write(byte b) throws ScxIOException, AlreadyClosedException {
         ensureOpen();
 
-        this.byteOutput.write(b);
+        connection.socketIO.out.write(b);
     }
 
     @Override
     public void write(ByteChunk b) throws ScxIOException, AlreadyClosedException {
         ensureOpen();
 
-        this.byteOutput.write(b);
+        connection.socketIO.out.write(b);
     }
 
     @Override
     public void flush() throws ScxIOException, AlreadyClosedException {
         ensureOpen();
 
-        this.byteOutput.flush();
-    }
-
-    @Override
-    public boolean isClosed() {
-        return closed;
+        connection.socketIO.out.flush();
     }
 
     @Override
@@ -54,15 +49,11 @@ public final class Http1ClientRequestByteOutput extends AbstractByteOutput {
         ensureOpen();
 
         // 这里中断 close, 改为刷新
-        this.byteOutput.flush();
+        connection.socketIO.out.flush();
 
         closed = true; // 只有成功关闭才算作 关闭
-        onClose.apply();
+        request._setSenderStatus(ScxHttpSenderStatus.SUCCESS);
 
-    }
-
-    public ByteOutput byteOutput() {
-        return byteOutput;
     }
 
 }

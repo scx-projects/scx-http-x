@@ -2,6 +2,7 @@ package dev.scx.http.x.http1;
 
 import dev.scx.http.headers.ScxHttpHeaders;
 import dev.scx.http.media.MediaWriter;
+import dev.scx.http.x.SocketIO;
 import dev.scx.http.x.http1.headers.Http1Headers;
 import dev.scx.http.x.http1.io.ContentLengthBodyTooLargeException;
 import dev.scx.http.x.http1.io.HeaderTooLargeException;
@@ -10,18 +11,14 @@ import dev.scx.http.x.http1.io.StatusLineToLongException;
 import dev.scx.http.x.http1.status_line.InvalidStatusLineException;
 import dev.scx.http.x.http1.status_line.InvalidStatusLineHttpVersionException;
 import dev.scx.http.x.http1.status_line.InvalidStatusLineStatusCodeException;
-import dev.scx.io.ByteInput;
-import dev.scx.io.ByteOutput;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.NoMoreDataException;
 import dev.scx.io.exception.ScxIOException;
 
 import java.io.IOException;
-import java.net.Socket;
 
 import static dev.scx.http.x.http1.io.Http1Writer.sendRequestHeaders;
 import static dev.scx.io.ScxIO.createByteInput;
-import static dev.scx.io.ScxIO.createByteOutput;
 import static dev.scx.io.supplier.ClosePolicyByteSupplier.noCloseDrain;
 
 /// Http1ClientConnection
@@ -31,18 +28,12 @@ import static dev.scx.io.supplier.ClosePolicyByteSupplier.noCloseDrain;
 public final class Http1ClientConnection {
 
     /// 对外公开 tcpSocket 字段, 以便 实现更底层功能.
-    public final Socket tcpSocket;
-    /// 对外公开 dataReader 字段, 以便 实现更底层功能.
-    public final ByteInput dataReader;
-    /// 对外公开 dataWriter 字段, 以便 实现更底层功能.
-    public final ByteOutput dataWriter;
+    public final SocketIO socketIO;
 
     private final Http1ClientConnectionOptions options;
 
-    public Http1ClientConnection(Socket tcpSocket, Http1ClientConnectionOptions options) throws IOException {
-        this.tcpSocket = tcpSocket;
-        this.dataReader = createByteInput(tcpSocket.getInputStream());
-        this.dataWriter = createByteOutput(tcpSocket.getOutputStream());
+    public Http1ClientConnection(SocketIO socketIO, Http1ClientConnectionOptions options) {
+        this.socketIO = socketIO;
         this.options = options;
     }
 
@@ -65,13 +56,13 @@ public final class Http1ClientConnection {
     // 这里的异常需要精细化处理
     public Http1ClientResponse waitResponse() throws ScxIOException, AlreadyClosedException, NoMoreDataException, InvalidStatusLineException, StatusLineToLongException, InvalidStatusLineStatusCodeException, InvalidStatusLineHttpVersionException, HeaderTooLargeException, ContentLengthBodyTooLargeException {
         // 1, 读取状态行
-        var statusLine = Http1Reader.readStatusLine(dataReader, options.maxStatusLineSize());
+        var statusLine = Http1Reader.readStatusLine(socketIO.in, options.maxStatusLineSize());
 
         // 2, 读取响应头
-        var headers = Http1Reader.readHeaders(dataReader, options.maxHeaderSize());
+        var headers = Http1Reader.readHeaders(socketIO.in, options.maxHeaderSize());
 
         // 3, 读取响应体
-        var bodyByteSupplier = Http1Reader.readBodyByteInput(headers, dataReader, options.maxPayloadSize());
+        var bodyByteSupplier = Http1Reader.readBodyByteInput(headers, socketIO.in, options.maxPayloadSize());
 
         // 创建一个 ByteInput, 要求如下:
         // 1, 要隔离 底层 close.
