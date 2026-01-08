@@ -1,11 +1,16 @@
 package dev.scx.http.x.http1.io;
 
-import dev.scx.function.Function0Void;
+import dev.scx.http.sender.ScxHttpSenderStatus;
 import dev.scx.http.x.http1.Http1ServerConnection;
+import dev.scx.http.x.http1.Http1ServerResponse;
 import dev.scx.io.ByteChunk;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.ScxIOException;
 import dev.scx.io.output.AbstractByteOutput;
+
+import java.io.IOException;
+
+import static dev.scx.http.x.http1.Http1ServerConnectionHelper.consumeBodyByteInput;
 
 /// Http1ServerResponseByteOutput
 ///
@@ -17,33 +22,33 @@ public final class Http1ServerResponseByteOutput extends AbstractByteOutput {
 
     private final Http1ServerConnection connection;
     private final boolean closeConnection;
-    private final Function0Void<RuntimeException> onClose;
+    private final Http1ServerResponse response;
 
-    public Http1ServerResponseByteOutput(Http1ServerConnection connection, boolean closeConnection, Function0Void<RuntimeException> onClose) {
+    public Http1ServerResponseByteOutput(Http1ServerConnection connection, boolean closeConnection, Http1ServerResponse response) {
         this.connection = connection;
         this.closeConnection = closeConnection;
-        this.onClose = onClose;
+        this.response = response;
     }
 
     @Override
     public void write(byte b) {
         ensureOpen();
 
-        connection.dataWriter.write(b);
+        connection.socketIO.out.write(b);
     }
 
     @Override
     public void write(ByteChunk b) throws ScxIOException, AlreadyClosedException {
         ensureOpen();
 
-        connection.dataWriter.write(b);
+        connection.socketIO.out.write(b);
     }
 
     @Override
     public void flush() {
         ensureOpen();
 
-        connection.dataWriter.flush();
+        connection.socketIO.out.flush();
     }
 
     @Override
@@ -52,15 +57,24 @@ public final class Http1ServerResponseByteOutput extends AbstractByteOutput {
 
         if (closeConnection) {
             // 如果明确表示 close 我们终止 连接
-            this.connection.stop();
+            try {
+                this.connection.close();
+            } catch (IOException e) {
+                throw new ScxIOException(e);
+            }
         } else {
             // 否则只是刷新
-            connection.dataWriter.flush();
+            connection.socketIO.out.flush();
+
+            // 用户处理器可能没有消费完请求体 这里我们帮助消费用户未消费的数据
+            consumeBodyByteInput(response.request().body().byteInput());
+
+            // 开启下一次 读取
+            connection.start();
         }
 
         closed = true; // 只有成功关闭才算作 关闭
-        onClose.apply();
-
+        response._setSenderStatus(ScxHttpSenderStatus.SUCCESS);
     }
 
 }
