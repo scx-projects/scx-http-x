@@ -92,11 +92,9 @@ public final class HttpServer implements ScxHttpServer {
 
         // 4, 根据协议不同选择不同的连接处理器
         if (useHttp2) {
-            var http2ServerConnection = new Http2ServerConnection(socketIO, options.http2ServerConnectionOptions(), requestHandler, errorHandler);
-            http2ServerConnection.start();
+            Http2ServerConnection.start(socketIO, this);
         } else {
-            var http1ServerConnection = new Http1ServerConnection(socketIO, options.http1ServerConnectionOptions(), requestHandler, errorHandler);
-            http1ServerConnection.start();
+            Http1ServerConnection.start(socketIO, this);
         }
 
     }
@@ -130,6 +128,14 @@ public final class HttpServer implements ScxHttpServer {
 
     public HttpServerOptions options() {
         return options;
+    }
+
+    public Function1Void<ScxHttpServerRequest, ?> requestHandler() {
+        return requestHandler;
+    }
+
+    public ScxHttpServerErrorHandler errorHandler() {
+        return errorHandler;
     }
 
 }
