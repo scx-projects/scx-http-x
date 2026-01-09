@@ -7,6 +7,7 @@ import dev.scx.http.x.SocketIO;
 public class Http2ServerConnection {
 
     public static void start(SocketIO socketIO, HttpServer httpServer) {
+        socketIO.closeQuietly();
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
