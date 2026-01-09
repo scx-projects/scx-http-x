@@ -6,6 +6,8 @@ import dev.scx.http.method.ScxHttpMethod;
 import dev.scx.http.peer_info.PeerInfo;
 import dev.scx.http.uri.ScxURI;
 import dev.scx.http.version.HttpVersion;
+import dev.scx.http.x.HttpServerContext;
+import dev.scx.http.x.SocketIO;
 import dev.scx.http.x.http1.headers.Http1Headers;
 import dev.scx.http.x.http1.request_line.Http1RequestLine;
 import dev.scx.io.ByteInput;
@@ -20,9 +22,6 @@ import static dev.scx.http.x.http1.headers.connection.Connection.CLOSE;
 /// @version 0.0.1
 public final class Http1ServerRequest implements ScxHttpServerRequest {
 
-    /// 对外公开 connection 字段, 以便 实现更底层功能.
-    public final Http1ServerConnection connection;
-
     private final ScxHttpMethod method;
     private final ScxURI uri;
     private final HttpVersion version;
@@ -32,16 +31,15 @@ public final class Http1ServerRequest implements ScxHttpServerRequest {
     private final PeerInfo localPeer;
     private final Http1ServerResponse response;
 
-    public Http1ServerRequest(Http1ServerConnection connection, Http1RequestLine requestLine, Http1Headers headers, ByteInput bodyByteInput) {
-        this.connection = connection;
+    public Http1ServerRequest(Http1RequestLine requestLine, Http1Headers headers, ByteInput bodyByteInput, SocketIO socketIO, HttpServerContext context) {
         this.method = requestLine.method();
         this.uri = requestLine.requestTarget().toScxURI();
         this.version = requestLine.httpVersion();
         this.headers = headers;
         this.body = new Http1Body(bodyByteInput, this.headers);
-        this.remotePeer = getRemotePeer(connection.socketIO.tcpSocket);
-        this.localPeer = getLocalPeer(connection.socketIO.tcpSocket);
-        this.response = new Http1ServerResponse(connection, this);
+        this.remotePeer = getRemotePeer(socketIO.tcpSocket);
+        this.localPeer = getLocalPeer(socketIO.tcpSocket);
+        this.response = new Http1ServerResponse(this, socketIO, context);
     }
 
     @Override
