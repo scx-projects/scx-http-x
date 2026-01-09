@@ -32,8 +32,6 @@ import static java.lang.System.Logger.Level.TRACE;
 /// @version 0.0.1
 public final class HttpServer implements ScxHttpServer {
 
-    private static final Logger LOGGER = System.getLogger(HttpServer.class.getName());
-
     private final HttpServerOptions options;
     private final ScxTCPServer tcpServer;
     private Function1Void<ScxHttpServerRequest, ?> requestHandler;
@@ -68,7 +66,7 @@ public final class HttpServer implements ScxHttpServer {
             try {
                 tcpSocket = configServerTLS(tcpSocket, options.tls(), this::protocolSelector);
             } catch (IOException e) {
-                LOGGER.log(TRACE, "升级到 TLS 时发生错误 !!!", e);
+                // 这里的异常是 升级到 TLS 时的异常 属于噪音 无需处理.
                 return;
             }
         }
@@ -78,7 +76,7 @@ public final class HttpServer implements ScxHttpServer {
         try {
             socketIO = createSocketIO(tcpSocket);
         } catch (IOException e) {
-            // 这里的异常是是 获取 流 时异常 无需处理.
+            // 这里的异常是 获取 流 时的异常 属于噪音 无需处理.
             return;
         }
 
