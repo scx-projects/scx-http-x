@@ -11,7 +11,6 @@ import dev.scx.tcp.TCPServer;
 
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
-import java.lang.System.Logger;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -21,7 +20,6 @@ import static dev.scx.http.version.HttpVersion.HTTP_1_1;
 import static dev.scx.http.version.HttpVersion.HTTP_2;
 import static dev.scx.http.x.HttpServerHelper.configServerTLS;
 import static dev.scx.http.x.SocketIOHelper.createSocketIO;
-import static java.lang.System.Logger.Level.TRACE;
 
 /// Http 服务器
 ///
@@ -30,7 +28,7 @@ import static java.lang.System.Logger.Level.TRACE;
 ///
 /// @author scx567888
 /// @version 0.0.1
-public final class HttpServer implements ScxHttpServer {
+public final class HttpServer implements ScxHttpServer, HttpServerContext {
 
     private final HttpServerOptions options;
     private final ScxTCPServer tcpServer;
@@ -124,14 +122,17 @@ public final class HttpServer implements ScxHttpServer {
         return tcpServer.localAddress();
     }
 
+    @Override
     public HttpServerOptions options() {
         return options;
     }
 
+    @Override
     public Function1Void<ScxHttpServerRequest, ?> requestHandler() {
         return requestHandler;
     }
 
+    @Override
     public ScxHttpServerErrorHandler errorHandler() {
         return errorHandler;
     }
