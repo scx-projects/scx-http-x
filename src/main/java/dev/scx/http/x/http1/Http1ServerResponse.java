@@ -9,15 +9,12 @@ import dev.scx.http.sender.ScxHttpSenderStatus;
 import dev.scx.http.status_code.HttpStatusCode;
 import dev.scx.http.status_code.ScxHttpStatusCode;
 import dev.scx.http.x.http1.headers.Http1Headers;
-import dev.scx.io.ByteOutput;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.ScxIOException;
 
 import java.util.concurrent.locks.ReentrantLock;
 
-import static dev.scx.http.sender.ScxHttpSenderStatus.FAILED;
 import static dev.scx.http.sender.ScxHttpSenderStatus.NOT_SENT;
-import static dev.scx.http.x.http1.io.Http1Writer.sendResponseHeaders;
 
 /// Http1ServerResponse
 ///
@@ -25,19 +22,17 @@ import static dev.scx.http.x.http1.io.Http1Writer.sendResponseHeaders;
 /// @version 0.0.1
 public final class Http1ServerResponse implements ScxHttpServerResponse {
 
-    /// 对外公开 connection 字段, 以便 实现更底层功能.
-    public final Http1ServerConnection connection;
-
     private final Http1ServerRequest request;
+    public final Http1ServerConnection connection;
     private final ReentrantLock sendLock; // 避免用户 多线程 send 搞乱状态
     private ScxHttpStatusCode statusCode;
     private Http1Headers headers;
     private String reasonPhrase;
     private ScxHttpSenderStatus senderStatus;
 
-    Http1ServerResponse(Http1ServerConnection connection, Http1ServerRequest request) {
-        this.connection = connection;
+    Http1ServerResponse(Http1ServerRequest request, Http1ServerConnection connection) {
         this.request = request;
+        this.connection = connection;
         this.sendLock = new ReentrantLock();
         this.statusCode = HttpStatusCode.OK;
         this.headers = new Http1Headers();
@@ -81,51 +76,12 @@ public final class Http1ServerResponse implements ScxHttpServerResponse {
         return this;
     }
 
-    private Void send0(MediaWriter mediaWriter) throws IllegalSenderStateException, ScxIOException, AlreadyClosedException {
-
-        // 检查发送状态
-        if (senderStatus != NOT_SENT) {
-            throw new IllegalSenderStateException(senderStatus);
-        }
-
-        // 复制一份头
-        var tempHeaders = new Http1Headers(this.headers);
-
-        // 处理 headers 以及获取 请求长度
-        var expectedLength = mediaWriter.beforeWrite(tempHeaders, request.headers());
-
-        // 发送头过程中出现错误 应该立即关闭连接
-        ByteOutput byteOutput;
-        try {
-            byteOutput = sendResponseHeaders(expectedLength, request, this, tempHeaders);
-        } catch (ScxIOException | AlreadyClosedException e) {
-            // 标记发送失败
-            senderStatus = FAILED;
-            // 直接终止 底层 Socket 连接
-            connection.socketIO.closeQuietly();
-            throw e;
-        }
-
-        try {
-            mediaWriter.write(byteOutput);
-        } catch (ScxIOException e) {
-            // 标记发送失败
-            senderStatus = FAILED;
-            // 直接终止 底层 Socket 连接
-            connection.socketIO.closeQuietly();
-            throw e;
-        } catch (AlreadyClosedException e) {
-            throw new IllegalSenderStateException(senderStatus);
-        }
-
-        return null;
-    }
-
     @Override
     public Void send(MediaWriter mediaWriter) throws IllegalSenderStateException, ScxIOException, AlreadyClosedException {
         sendLock.lock();
         try {
-            return send0(mediaWriter);
+            connection.sendResponse(this, mediaWriter);
+            return null;
         } finally {
             sendLock.unlock();
         }
