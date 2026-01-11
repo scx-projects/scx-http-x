@@ -43,6 +43,18 @@ public final class Http1Reader {
         }
     }
 
+    /// 读取 响应行
+    public static Http1StatusLine readStatusLine(ByteInput byteInput, int maxStatusLineSize) throws ScxIOException, AlreadyClosedException, NoMoreDataException, StatusLineToLongException, InvalidStatusLineException, InvalidStatusLineStatusCodeException, InvalidStatusLineHttpVersionException {
+        try {
+            var statusLineBytes = byteInput.readUntil(CRLF_BYTES, maxStatusLineSize);
+            var statusLineStr = new String(statusLineBytes);
+            return Http1StatusLine.of(statusLineStr);
+        } catch (NoMatchFoundException e) {
+            // 在指定长度内未匹配到 这里抛出响应行过大异常.
+            throw new StatusLineToLongException("响应行过长 !!!");
+        }
+    }
+
     /// 读取 headers
     public static Http1Headers readHeaders(ByteInput byteInput, int maxHeaderSize) throws ScxIOException, AlreadyClosedException, NoMoreDataException, HeaderTooLargeException {
         try {
@@ -87,18 +99,6 @@ public final class Http1Reader {
 
         // 3, 没有长度的空请求体
         return new NullContentByteSupplier(byteInput);
-    }
-
-    /// 读取响应行
-    public static Http1StatusLine readStatusLine(ByteInput byteInput, int maxStatusLineSize) throws ScxIOException, AlreadyClosedException, NoMoreDataException, StatusLineToLongException, InvalidStatusLineException, InvalidStatusLineStatusCodeException, InvalidStatusLineHttpVersionException {
-        try {
-            var statusLineBytes = byteInput.readUntil(CRLF_BYTES, maxStatusLineSize);
-            var statusLineStr = new String(statusLineBytes);
-            return Http1StatusLine.of(statusLineStr);
-        } catch (NoMatchFoundException e) {
-            // 在指定长度内未匹配到 这里抛出响应行过大异常.
-            throw new StatusLineToLongException("响应行过长 !!!");
-        }
     }
 
 }
