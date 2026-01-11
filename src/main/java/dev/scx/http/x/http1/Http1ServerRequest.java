@@ -6,8 +6,6 @@ import dev.scx.http.method.ScxHttpMethod;
 import dev.scx.http.peer_info.PeerInfo;
 import dev.scx.http.uri.ScxURI;
 import dev.scx.http.version.HttpVersion;
-import dev.scx.http.x.HttpServerContext;
-import dev.scx.http.x.SocketIO;
 import dev.scx.http.x.http1.headers.Http1Headers;
 import dev.scx.http.x.http1.request_line.Http1RequestLine;
 import dev.scx.io.ByteInput;
@@ -31,15 +29,15 @@ public final class Http1ServerRequest implements ScxHttpServerRequest {
     private final PeerInfo localPeer;
     private final Http1ServerResponse response;
 
-    public Http1ServerRequest(Http1RequestLine requestLine, Http1Headers headers, ByteInput bodyByteInput, SocketIO socketIO, HttpServerContext context) {
+    public Http1ServerRequest(Http1RequestLine requestLine, Http1Headers headers, ByteInput bodyByteInput, Http1ServerConnection connection) {
         this.method = requestLine.method();
         this.uri = requestLine.requestTarget().toScxURI();
         this.version = requestLine.httpVersion();
         this.headers = headers;
         this.body = new Http1Body(bodyByteInput, this.headers);
-        this.remotePeer = getRemotePeer(socketIO.tcpSocket);
-        this.localPeer = getLocalPeer(socketIO.tcpSocket);
-        this.response = new Http1ServerResponse(this, socketIO, context);
+        this.remotePeer = getRemotePeer(connection.socketIO.tcpSocket);
+        this.localPeer = getLocalPeer(connection.socketIO.tcpSocket);
+        this.response = new Http1ServerResponse(this, connection);
     }
 
     @Override
