@@ -28,7 +28,7 @@ import static dev.scx.http.x.SocketIOHelper.createSocketIO;
 ///
 /// @author scx567888
 /// @version 0.0.1
-public final class HttpServer implements ScxHttpServer, HttpServerContext {
+public final class HttpServer implements ScxHttpServer {
 
     private final HttpServerOptions options;
     private final ScxTCPServer tcpServer;
@@ -88,9 +88,11 @@ public final class HttpServer implements ScxHttpServer, HttpServerContext {
 
         // 4, 根据协议不同选择不同的连接处理器
         if (useHttp2) {
-            Http2ServerConnection.start(socketIO, this);
+            var http2ServerConnection = new Http2ServerConnection(socketIO, options.http2ServerConnectionOptions(), requestHandler, errorHandler);
+            http2ServerConnection.start();
         } else {
-            Http1ServerConnection.start(socketIO, this);
+            var http1ServerConnection = new Http1ServerConnection(socketIO, options.http1ServerConnectionOptions(), requestHandler, errorHandler);
+            http1ServerConnection.requestNext();
         }
 
     }
@@ -122,19 +124,8 @@ public final class HttpServer implements ScxHttpServer, HttpServerContext {
         return tcpServer.localAddress();
     }
 
-    @Override
     public HttpServerOptions options() {
         return options;
-    }
-
-    @Override
-    public Function1Void<ScxHttpServerRequest, ?> requestHandler() {
-        return requestHandler;
-    }
-
-    @Override
-    public ScxHttpServerErrorHandler errorHandler() {
-        return errorHandler;
     }
 
 }
