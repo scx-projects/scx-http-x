@@ -34,10 +34,9 @@ public final class Http1Writer {
         byteOutput.write(CRLF_BYTES);
     }
 
-    // todo 空头发什么?
-
     /// 写入 headers
     public static void writeHeaders(ByteOutput byteOutput, Http1Headers headers) throws ScxIOException, AlreadyClosedException {
+        // todo 空头发什么?
         var headersStr = headers.encode();
         var headersBytes = headersStr.getBytes();
         byteOutput.write(headersBytes);
