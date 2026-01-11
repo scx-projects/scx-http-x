@@ -2,8 +2,8 @@ package dev.scx.http.x.http1;
 
 import dev.scx.http.headers.ScxHttpHeaders;
 import dev.scx.http.media.MediaWriter;
+import dev.scx.http.sender.IllegalSenderStateException;
 import dev.scx.http.x.SocketIO;
-import dev.scx.http.x.http1.headers.Http1Headers;
 import dev.scx.http.x.http1.io.ContentLengthBodyTooLargeException;
 import dev.scx.http.x.http1.io.HeaderTooLargeException;
 import dev.scx.http.x.http1.io.Http1Reader;
@@ -15,6 +15,7 @@ import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.NoMoreDataException;
 import dev.scx.io.exception.ScxIOException;
 
+import static dev.scx.http.sender.ScxHttpSenderStatus.NOT_SENT;
 import static dev.scx.http.x.http1.io.Http1Writer.sendRequestHeaders;
 import static dev.scx.io.ScxIO.createByteInput;
 import static dev.scx.io.supplier.ClosePolicyByteSupplier.noCloseDrain;
@@ -35,31 +36,33 @@ public final class Http1ClientConnection {
         this.options = options;
     }
 
-    public Http1ClientConnection sendRequest(Http1ClientRequest request, MediaWriter writer) throws ScxIOException, AlreadyClosedException {
-        // 复制一份头
-        var tempHeaders = new Http1Headers(request.headers());
+    public Http1ClientConnection sendRequest(Http1ClientRequest request, MediaWriter mediaWriter) throws ScxIOException, AlreadyClosedException {
+        // 检查发送状态
+        if (request.senderStatus() != NOT_SENT) {
+            throw new IllegalSenderStateException(request.senderStatus());
+        }
 
         // 处理 headers 以及获取 请求长度
-        var expectedLength = writer.beforeWrite(tempHeaders, ScxHttpHeaders.of());
+        var expectedLength = mediaWriter.beforeWrite(request.headers(), ScxHttpHeaders.of());
 
         // 发送头
-        var byteOutput = sendRequestHeaders(expectedLength, request, this, tempHeaders);
+        var byteOutput = sendRequestHeaders(expectedLength, request, this);
 
         // 调用处理器
-        writer.write(byteOutput);
+        mediaWriter.write(byteOutput);
 
         return this;
     }
 
-    // 这里的异常需要精细化处理
-    public Http1ClientResponse waitResponse() throws ScxIOException, AlreadyClosedException, NoMoreDataException, InvalidStatusLineException, StatusLineToLongException, InvalidStatusLineStatusCodeException, InvalidStatusLineHttpVersionException, HeaderTooLargeException, ContentLengthBodyTooLargeException {
-        // 1, 读取状态行
+    /// 读取响应
+    public Http1ClientResponse readResponse() throws ScxIOException, AlreadyClosedException, NoMoreDataException, InvalidStatusLineException, StatusLineToLongException, InvalidStatusLineStatusCodeException, InvalidStatusLineHttpVersionException, HeaderTooLargeException, ContentLengthBodyTooLargeException {
+        // 1, 读取 状态行
         var statusLine = Http1Reader.readStatusLine(socketIO.in, options.maxStatusLineSize());
 
-        // 2, 读取响应头
+        // 2, 读取 响应头
         var headers = Http1Reader.readHeaders(socketIO.in, options.maxHeaderSize());
 
-        // 3, 读取响应体
+        // 3, 读取 响应体
         var bodyByteSupplier = Http1Reader.readBodyByteInput(headers, socketIO.in, options.maxPayloadSize());
 
         // 创建一个 ByteInput, 要求如下:
