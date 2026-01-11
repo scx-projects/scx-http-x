@@ -17,7 +17,7 @@ public record Http1StatusLine(HttpVersion httpVersion, ScxHttpStatusCode statusC
         return Http1StatusLineHelper.parseStatusLine(statusLineStr);
     }
 
-    public String encode() {
+    public String encode() throws IllegalArgumentException {
         return Http1StatusLineHelper.encodeStatusLine(this);
     }
 

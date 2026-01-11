@@ -41,7 +41,7 @@ final class Http1StatusLineHelper {
         return new Http1StatusLine(httpVersion, statusCode, reasonPhraseStr);
     }
 
-    public static String encodeStatusLine(Http1StatusLine statusLine) {
+    public static String encodeStatusLine(Http1StatusLine statusLine) throws IllegalArgumentException {
         var httpVersion = statusLine.httpVersion();
         var statusCode = statusLine.statusCode();
         var reasonPhrase = statusLine.reasonPhrase();
