@@ -15,11 +15,9 @@ import dev.scx.io.output.AbstractByteOutput;
 /// @version 0.0.1
 public final class Http1ServerResponseByteOutput extends AbstractByteOutput {
 
-    private final SocketIO socketIO;
     private final Http1ServerResponse response;
 
-    public Http1ServerResponseByteOutput(SocketIO socketIO, Http1ServerResponse response) {
-        this.socketIO = socketIO;
+    public Http1ServerResponseByteOutput(Http1ServerResponse response) {
         this.response = response;
     }
 
@@ -27,32 +25,36 @@ public final class Http1ServerResponseByteOutput extends AbstractByteOutput {
     public void write(byte b) {
         ensureOpen();
 
-        socketIO.out.write(b);
+        response.connection.socketIO.out.write(b);
     }
 
     @Override
     public void write(ByteChunk b) throws ScxIOException, AlreadyClosedException {
         ensureOpen();
 
-        socketIO.out.write(b);
+        response.connection.socketIO.out.write(b);
     }
 
     @Override
     public void flush() {
         ensureOpen();
 
-        socketIO.out.flush();
+        response.connection.socketIO.out.flush();
     }
 
     @Override
     public void close() throws ScxIOException, AlreadyClosedException {
         ensureOpen();
 
-        // 通知 Http1ServerResponse 流已关闭
-        response.onByteOutputClose();
+        // 这里中断 close, 改为刷新
+        response.connection.socketIO.out.flush();
 
         closed = true; // 只有成功关闭才算作 关闭
         response._setSenderStatus(ScxHttpSenderStatus.SUCCESS);
+
+        // 通知 Http1ServerConnection 流已结束
+        response.connection.onResponseCompleted(response);
+
     }
 
 }
