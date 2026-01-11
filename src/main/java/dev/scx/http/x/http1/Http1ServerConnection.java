@@ -117,7 +117,7 @@ public final class Http1ServerConnection {
         var headers = Http1Reader.readHeaders(socketIO.in, options.maxHeaderSize());
 
         // 3, 读取 请求体
-        var bodyByteSupplier = Http1Reader.readBodyByteSupplier(headers, socketIO.in, options.maxPayloadSize());
+        var bodyByteSupplier = Http1Reader.createBodyByteSupplier(headers, socketIO.in, options.maxPayloadSize());
 
         // 4, 在交给用户处理器进行处理之前, 我们需要做一些预处理
 

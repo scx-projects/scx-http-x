@@ -63,7 +63,7 @@ public final class Http1ClientConnection {
         var headers = Http1Reader.readHeaders(socketIO.in, options.maxHeaderSize());
 
         // 3, 读取 响应体
-        var bodyByteSupplier = Http1Reader.readBodyByteSupplier(headers, socketIO.in, options.maxPayloadSize());
+        var bodyByteSupplier = Http1Reader.createBodyByteSupplier(headers, socketIO.in, options.maxPayloadSize());
 
         // 创建一个 ByteInput, 要求如下:
         // 1, 要隔离 底层 close.
