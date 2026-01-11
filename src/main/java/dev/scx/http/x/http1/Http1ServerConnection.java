@@ -52,7 +52,6 @@ public final class Http1ServerConnection {
     private final Function1Void<ScxHttpServerRequest, ?> requestHandler;
     private final ScxHttpServerErrorHandler errorHandler;
     private final String threadName;
-    private ScxHttpServerRequest lastRequest;
     private boolean stopped;
 
     public Http1ServerConnection(SocketIO socketIO, Http1ServerConnectionOptions options, Function1Void<ScxHttpServerRequest, ?> requestHandler, ScxHttpServerErrorHandler errorHandler) {
@@ -61,7 +60,7 @@ public final class Http1ServerConnection {
         this.requestHandler = requestHandler;
         this.errorHandler = errorHandler == null ? DEFAULT_HTTP_SERVER_ERROR_HANDLER : errorHandler; // 没有就回退到默认
         this.threadName = "Http1ServerConnection-Handler-" + socketIO.tcpSocket.getRemoteSocketAddress();
-        this.lastRequest = null;
+        this.stopped = false;
     }
 
     public void sendResponse(Http1ServerResponse response, MediaWriter mediaWriter) throws IllegalSenderStateException {
@@ -167,8 +166,10 @@ public final class Http1ServerConnection {
             // 用户处理器可能没有消费完请求体 这里我们帮助消费用户未消费的数据
             consumeBodyByteInput(response.request().body().byteInput());
 
-            // 开启下一次 读取
-            requestNext();
+            if (!stopped) {
+                // 开启下一次 读取
+                requestNext();
+            }
 
         }
     }
