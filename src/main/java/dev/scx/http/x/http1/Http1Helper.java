@@ -30,7 +30,7 @@ import static dev.scx.http.x.http1.headers.connection.Connection.*;
 import static dev.scx.http.x.http1.headers.transfer_encoding.TransferEncoding.CHUNKED;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class Http1Helper {
+final class Http1Helper {
 
     /// 验证 Http/1.1 中的 Host, 这里我们只校验是否存在且只有一个值
     public static void validateHost(ScxHttpHeaders headers) throws BadRequestException {
