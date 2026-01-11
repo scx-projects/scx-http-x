@@ -88,13 +88,13 @@ public final class HttpClientRequest implements Http1ClientRequest, Http2ClientR
         }
 
         if (useHttp2) {
-            return new Http2ClientConnection(socketIO, options.http2ClientConnectionOptions()).sendRequest(this, mediaWriter).waitResponse();
+            return new Http2ClientConnection(socketIO, options.http2ClientConnectionOptions()).sendRequest(this, mediaWriter).readResponse();
         } else {
             // 仅当 http 协议 (不是 SSL) 并且开启代理的时候才使用 绝对路径
             if (!(socketIO.tcpSocket instanceof SSLSocket) && options.proxy() != null) {
                 this.useProxy = true;
             }
-            return new Http1ClientConnection(socketIO, options.http1ClientConnectionOptions()).sendRequest(this, mediaWriter).waitResponse();
+            return new Http1ClientConnection(socketIO, options.http1ClientConnectionOptions()).sendRequest(this, mediaWriter).readResponse();
         }
 
     }
