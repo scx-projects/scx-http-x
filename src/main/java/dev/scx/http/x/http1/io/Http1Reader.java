@@ -66,7 +66,7 @@ public final class Http1Reader {
     /// 这里我们返回的 ByteSupplier 是直接关联了 ByteInput 的 ByteSupplier,
     /// 也就是说 如果 调用 ByteSupplier 的 close, 会连带关闭 ByteInput 的 close.
     /// 如果想做到 中断 close 请在上层二次包装.
-    public static ByteSupplier readBodyByteInput(Http1Headers headers, ByteInput byteInput, long maxPayloadSize) throws ContentLengthBodyTooLargeException {
+    public static ByteSupplier readBodyByteSupplier(Http1Headers headers, ByteInput byteInput, long maxPayloadSize) throws ContentLengthBodyTooLargeException {
         // HTTP/1.1 本质上只有两种请求体格式 1, 分块传输 2, 指定长度 (当然也可以没有长度 那就表示没有请求体)
 
         // 1, 因为 分块传输的优先级高于 contentLength 所以先判断是否为分块传输

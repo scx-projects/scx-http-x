@@ -8,6 +8,7 @@ import dev.scx.http.x.http1.headers.Http1Headers;
 import dev.scx.http.x.http1.request_line.Http1RequestLine;
 import dev.scx.http.x.http1.request_line.request_target.*;
 import dev.scx.http.x.http1.status_line.Http1StatusLine;
+import dev.scx.io.ByteChunk;
 import dev.scx.io.ByteOutput;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.ScxIOException;
@@ -27,6 +28,47 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /// @author scx567888
 /// @version 0.0.1
 public final class Http1Writer {
+
+    private static final ByteChunk CRLF_BYTES = ByteChunk.of("\r\n");
+
+    public static void writeStatusLine(ByteOutput byteOutput, Http1StatusLine statusLine) {
+        var statusLineStr = statusLine.encode();
+        var statusLineBytes = statusLineStr.getBytes();
+        byteOutput.write(statusLineBytes);
+        byteOutput.write(CRLF_BYTES);
+    }
+
+    public static void writeHeaders(ByteOutput byteOutput, Http1Headers headers) {
+        var headersStr = headers.encode();
+        var headersBytes = headersStr.getBytes();
+        byteOutput.write(headersBytes);
+        byteOutput.write(CRLF_BYTES);
+    }
+
+    public static Http1StatusLine createStatusLine(Http1ServerResponse response) {
+        var statusCode = response.statusCode();
+        var reasonPhrase = response.reasonPhrase() != null ? response.reasonPhrase() : getReasonPhrase(statusCode, "unknown");
+        return new Http1StatusLine(statusCode, reasonPhrase);
+    }
+
+    public static Http1Headers configResponseHeaders(Http1Headers headers, long expectedLength) {
+
+    }
+
+    public static ByteOutput createResponseByteOutput(Http1ServerResponse response) {
+        // 创建 基本 输出流
+        var baseByteOutput = new Http1ServerResponseByteOutput(response);
+
+        // 只有明确表示 分块的时候才使用分块
+        var useChunkedTransfer = response.headers().transferEncoding() == CHUNKED;
+        var contentLength = response.headers().contentLength();
+
+        // 判断是否采用分块传输
+        return useChunkedTransfer ?
+            new HttpChunkedByteOutput(baseByteOutput) :
+            new ContentLengthByteOutput(baseByteOutput, contentLength);
+    }
+
 
     /// 检查响应是否 存在响应体
     public static boolean checkResponseHasBody(ScxHttpStatusCode status) {
@@ -77,7 +119,9 @@ public final class Http1Writer {
         }
     }
 
-    public static ByteOutput sendResponseHeaders(long expectedLength, Http1ServerRequest request, Http1ServerResponse response, Http1Headers headers) throws ScxIOException, AlreadyClosedException {
+
+
+    public static ByteOutput sendResponseHeaders(long expectedLength, Http1ServerResponse response) throws ScxIOException, AlreadyClosedException {
         // 0, 准备参数
         var httpVersion = request.version();
         var statusCode = response.statusCode();
@@ -138,7 +182,7 @@ public final class Http1Writer {
         var hb = h.getBytes(UTF_8);
 
         // 写入 socket
-        connection.socketIO.out.write(hb);
+        socketIO.out.write(hb);
 
         // 只有明确表示 close 的时候我们才关闭
         var closeConnection = headers.connection() == CLOSE;
@@ -147,7 +191,7 @@ public final class Http1Writer {
         var useChunkedTransfer = headers.transferEncoding() == CHUNKED;
 
         // 创建 基本 输出流
-        var baseByteOutput = new Http1ServerResponseByteOutput(connection, closeConnection, response);
+        var baseByteOutput = new Http1ServerResponseByteOutput(response);
 
         // 判断是否采用分块传输
         return useChunkedTransfer ?
@@ -156,7 +200,7 @@ public final class Http1Writer {
 
     }
 
-    public static ByteOutput sendRequestHeaders(long expectedLength, Http1ClientRequest request, Http1ClientConnection connection, Http1Headers headers) throws ScxIOException, AlreadyClosedException {
+    public static ByteOutput sendRequestHeaders(long expectedLength, Http1ClientRequest request, Http1ClientConnection connection) throws ScxIOException, AlreadyClosedException {
         // 0, 准备参数
         var method = request.method();
         var uri = request.uri();
@@ -231,5 +275,7 @@ public final class Http1Writer {
             new ContentLengthByteOutput(baseByteOutput, expectedLength);
 
     }
+
+
 
 }

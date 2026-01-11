@@ -25,14 +25,13 @@ import java.lang.System.Logger;
 
 import static dev.scx.http.error_handler.ErrorPhase.SYSTEM;
 import static dev.scx.http.error_handler.ErrorPhase.USER;
-import static dev.scx.http.sender.ScxHttpSenderStatus.FAILED;
-import static dev.scx.http.sender.ScxHttpSenderStatus.NOT_SENT;
+import static dev.scx.http.sender.ScxHttpSenderStatus.*;
 import static dev.scx.http.x.error_handler.DefaultHttpServerErrorHandler.DEFAULT_HTTP_SERVER_ERROR_HANDLER;
 import static dev.scx.http.x.http1.Http1ServerConnectionHelper.*;
 import static dev.scx.http.x.http1.headers.connection.Connection.CLOSE;
 import static dev.scx.http.x.http1.headers.expect.Expect.CONTINUE;
 import static dev.scx.http.x.http1.io.AutoContinueByteSupplier.sendContinue100;
-import static dev.scx.http.x.http1.io.Http1Writer.sendResponseHeaders;
+import static dev.scx.http.x.http1.io.Http1Writer.*;
 import static dev.scx.io.ScxIO.createByteInput;
 import static dev.scx.io.supplier.ClosePolicyByteSupplier.noCloseDrain;
 import static java.lang.System.Logger.Level.DEBUG;
@@ -69,20 +68,31 @@ public final class Http1ServerConnection {
             throw new IllegalSenderStateException(response.senderStatus());
         }
 
+        // 标记发送中
+        response._setSenderStatus(SENDING);
+
         // 处理 headers 以及获取 请求长度
         var expectedLength = mediaWriter.beforeWrite(response.headers(), response.request().headers());
 
-        // 发送头过程中出现错误 应该立即关闭连接
-        ByteOutput byteOutput;
-        try {
-            byteOutput = sendResponseHeaders(expectedLength, response);
-        } catch (ScxIOException | AlreadyClosedException e) {
-            // 标记发送失败
-            response._setSenderStatus(FAILED);
-            // 直接终止 底层 Socket 连接
-            socketIO.closeQuietly();
-            throw e;
-        }
+        // 1, 写入 响应行
+        Http1Writer.writeStatusLine(socketIO.out, createStatusLine(response));
+
+        // 2, 配置 头
+        Http1Writer.writeHeaders(socketIO.out, configResponseHeaders(response.headers(),expectedLength));
+
+        ByteOutput byteOutput = createResponseByteOutput(response);
+
+//        // 发送头过程中出现错误 应该立即关闭连接
+//        ByteOutput byteOutput;
+//        try {
+//            byteOutput = sendResponseHeaders(expectedLength, response);
+//        } catch (ScxIOException | AlreadyClosedException e) {
+//            // 标记发送失败
+//            response._setSenderStatus(FAILED);
+//            // 直接终止 底层 Socket 连接
+//            socketIO.closeQuietly();
+//            throw e;
+//        }
 
         try {
             mediaWriter.write(byteOutput);
@@ -107,7 +117,7 @@ public final class Http1ServerConnection {
         var headers = Http1Reader.readHeaders(socketIO.in, options.maxHeaderSize());
 
         // 3, 读取 请求体
-        var bodyByteSupplier = Http1Reader.readBodyByteInput(headers, socketIO.in, options.maxPayloadSize());
+        var bodyByteSupplier = Http1Reader.readBodyByteSupplier(headers, socketIO.in, options.maxPayloadSize());
 
         // 4, 在交给用户处理器进行处理之前, 我们需要做一些预处理
 
@@ -154,7 +164,7 @@ public final class Http1ServerConnection {
             .start(this::handle);
     }
 
-    public void onResponseCompleted(Http1ServerResponse response){
+    public void onResponseCompleted(Http1ServerResponse response) {
         // 是否是 close
         var closeConnection = response.headers().connection() == CLOSE;
         if (closeConnection) {
