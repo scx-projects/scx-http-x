@@ -3,6 +3,7 @@ package dev.scx.http.x.http1;
 import dev.scx.http.ScxHttpClientResponse;
 import dev.scx.http.headers.ScxHttpHeaders;
 import dev.scx.http.media.MediaReader;
+import dev.scx.http.peer_info.PeerInfo;
 import dev.scx.http.status_code.ScxHttpStatusCode;
 import dev.scx.http.version.HttpVersion;
 import dev.scx.http.x.http1.headers.Http1Headers;
@@ -12,6 +13,8 @@ import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.ScxIOException;
 
 import static dev.scx.http.version.HttpVersion.HTTP_1_1;
+import static dev.scx.http.x.http1.Http1ServerHelper.getLocalPeer;
+import static dev.scx.http.x.http1.Http1ServerHelper.getRemotePeer;
 
 /// Http1ClientResponse
 ///
@@ -22,11 +25,15 @@ public final class Http1ClientResponse implements ScxHttpClientResponse {
     private final Http1StatusLine statusLine;
     private final Http1Headers headers;
     private final ByteInput body;
+    private final PeerInfo remotePeer;
+    private final PeerInfo localPeer;
 
-    public Http1ClientResponse(Http1StatusLine statusLine, Http1Headers headers, ByteInput bodyByteInput) {
+    public Http1ClientResponse(Http1StatusLine statusLine, Http1Headers headers, ByteInput bodyByteInput, Http1ClientConnection connection) {
         this.statusLine = statusLine;
         this.headers = headers;
         this.body = bodyByteInput;
+        this.remotePeer = getRemotePeer(connection.socketIO.tcpSocket);
+        this.localPeer = getLocalPeer(connection.socketIO.tcpSocket);
     }
 
     @Override
@@ -56,6 +63,16 @@ public final class Http1ClientResponse implements ScxHttpClientResponse {
     @Override
     public <T> T as(MediaReader<T> mediaReader) throws ScxIOException, AlreadyClosedException {
         return mediaReader.read(body, headers);
+    }
+
+    @Override
+    public PeerInfo remotePeer() {
+        return remotePeer;
+    }
+
+    @Override
+    public PeerInfo localPeer() {
+        return localPeer;
     }
 
 }

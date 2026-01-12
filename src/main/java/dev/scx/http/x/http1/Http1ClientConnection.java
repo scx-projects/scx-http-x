@@ -15,7 +15,8 @@ import dev.scx.io.exception.ScxIOException;
 
 import static dev.scx.http.sender.ScxHttpSenderStatus.NOT_SENT;
 import static dev.scx.http.sender.ScxHttpSenderStatus.SENDING;
-import static dev.scx.http.x.http1.Http1ClientHelper.*;
+import static dev.scx.http.x.http1.Http1ClientHelper.configRequestHeaders;
+import static dev.scx.http.x.http1.Http1ClientHelper.createRequestLine;
 import static dev.scx.io.ScxIO.createByteInput;
 import static dev.scx.io.supplier.ClosePolicyByteSupplier.noCloseDrain;
 
@@ -47,12 +48,12 @@ public final class Http1ClientConnection {
         // 标记发送中
         request._setSenderStatus(SENDING);
 
-        Http1Writer.writeRequestLine(socketIO.out,createRequestLine(request));
+        Http1Writer.writeRequestLine(socketIO.out, createRequestLine(request));
 
-        Http1Writer.writeHeaders(socketIO.out,configRequestHeaders(request,expectedLength));
+        Http1Writer.writeHeaders(socketIO.out, configRequestHeaders(request, expectedLength));
 
         // 创建 基本 输出流
-        var baseByteOutput = new Http1ClientRequestByteOutput( request,this);
+        var baseByteOutput = new Http1ClientRequestByteOutput(request, this);
 
         ByteOutput requestByteOutput = Http1Writer.createBodyByteOutput(baseByteOutput, request.headers());
 
@@ -78,7 +79,7 @@ public final class Http1ClientConnection {
         // 2, 同时在 close 的时候还要排空流.
         var bodyByteInput = createByteInput(noCloseDrain(bodyByteSupplier));
 
-        return new Http1ClientResponse(statusLine, headers, bodyByteInput);
+        return new Http1ClientResponse(statusLine, headers, bodyByteInput, this);
     }
 
 }
