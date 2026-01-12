@@ -14,8 +14,10 @@ import static dev.scx.http.media.empty.EmptyMediaWriter.EMPTY_MEDIA_WRITER;
 import static dev.scx.http.method.HttpMethod.CONNECT;
 import static dev.scx.http.status_code.HttpStatusCode.OK;
 import static dev.scx.http.version.HttpVersion.HTTP_1_1;
-import static dev.scx.http.x.HttpClientHelper.*;
-import static dev.scx.http.x.SocketIOHelper.createSocketIO;
+import static dev.scx.http.x.helper.SchemeHelper.isTLS;
+import static dev.scx.http.x.helper.ScxURIHelper.toRemoteAddress;
+import static dev.scx.http.x.helper.SocketIOHelper.createSocketIO;
+import static dev.scx.http.x.helper.TLSHelper.configClientTLS;
 
 /// HttpClient
 ///
@@ -47,15 +49,16 @@ public final class HttpClient implements ScxHttpClient {
     /// 创建一个 TCP 连接
     public Socket createSocket(ScxURI uri, String... applicationProtocols) throws IOException {
         // 判断是否是 tls
-        var isTLS = checkIsTLS(uri.scheme());
-
+        var useTLS = isTLS(uri.scheme());
         // 判断是否使用代理
-        if (options.proxy() != null) {
-            return isTLS ?
+        var useProxy = options.proxy() != null;
+
+        if (useProxy) {
+            return useTLS ?
                 createTLSSocketWithProxy(uri, applicationProtocols) :
                 createPlainSocketWithProxy();
         } else {
-            return isTLS ?
+            return useTLS ?
                 createTLSSocket(uri, applicationProtocols) :
                 createPlainSocket(uri);
         }
@@ -65,7 +68,7 @@ public final class HttpClient implements ScxHttpClient {
     /// 创建 明文 socket
     public Socket createPlainSocket(ScxURI uri) throws IOException {
         var tcpClient = new TCPClient();
-        var remoteAddress = getRemoteAddress(uri);
+        var remoteAddress = toRemoteAddress(uri);
         return tcpClient.connect(remoteAddress, options.timeout());
     }
 
