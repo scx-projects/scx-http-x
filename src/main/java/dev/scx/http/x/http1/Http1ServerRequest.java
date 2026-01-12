@@ -1,7 +1,7 @@
 package dev.scx.http.x.http1;
 
 import dev.scx.http.ScxHttpServerRequest;
-import dev.scx.http.body.ScxHttpBody;
+import dev.scx.http.media.MediaReader;
 import dev.scx.http.method.ScxHttpMethod;
 import dev.scx.http.peer_info.PeerInfo;
 import dev.scx.http.uri.ScxURI;
@@ -9,9 +9,11 @@ import dev.scx.http.version.HttpVersion;
 import dev.scx.http.x.http1.headers.Http1Headers;
 import dev.scx.http.x.http1.request_line.Http1RequestLine;
 import dev.scx.io.ByteInput;
+import dev.scx.io.exception.AlreadyClosedException;
+import dev.scx.io.exception.ScxIOException;
 
-import static dev.scx.http.x.http1.PeerInfoHelper.getLocalPeer;
-import static dev.scx.http.x.http1.PeerInfoHelper.getRemotePeer;
+import static dev.scx.http.x.http1.Http1Helper.getLocalPeer;
+import static dev.scx.http.x.http1.Http1Helper.getRemotePeer;
 import static dev.scx.http.x.http1.headers.connection.Connection.CLOSE;
 
 /// Http1ServerRequest
@@ -24,7 +26,7 @@ public final class Http1ServerRequest implements ScxHttpServerRequest {
     private final ScxURI uri;
     private final HttpVersion version;
     private final Http1Headers headers;
-    private final ScxHttpBody body;
+    private final ByteInput body;
     private final PeerInfo remotePeer;
     private final PeerInfo localPeer;
     private final Http1ServerResponse response;
@@ -34,7 +36,7 @@ public final class Http1ServerRequest implements ScxHttpServerRequest {
         this.uri = requestLine.requestTarget().toScxURI();
         this.version = requestLine.httpVersion();
         this.headers = headers;
-        this.body = new Http1Body(bodyByteInput, this.headers);
+        this.body = bodyByteInput;
         this.remotePeer = getRemotePeer(connection.socketIO.tcpSocket);
         this.localPeer = getLocalPeer(connection.socketIO.tcpSocket);
         this.response = new Http1ServerResponse(this, connection);
@@ -66,8 +68,13 @@ public final class Http1ServerRequest implements ScxHttpServerRequest {
     }
 
     @Override
-    public ScxHttpBody body() {
+    public ByteInput body() {
         return body;
+    }
+
+    @Override
+    public <T> T as(MediaReader<T> mediaReader) throws ScxIOException, AlreadyClosedException {
+        return mediaReader.read(body, headers);
     }
 
     @Override

@@ -23,10 +23,10 @@ public final class Http1ClientResponse implements ScxHttpClientResponse {
     private final Http1Headers headers;
     private final ByteInput body;
 
-    public Http1ClientResponse(Http1StatusLine statusLine, Http1Headers headers, ByteInput body) {
+    public Http1ClientResponse(Http1StatusLine statusLine, Http1Headers headers, ByteInput bodyByteInput) {
         this.statusLine = statusLine;
         this.headers = headers;
-        this.body = body;
+        this.body = bodyByteInput;
     }
 
     @Override
