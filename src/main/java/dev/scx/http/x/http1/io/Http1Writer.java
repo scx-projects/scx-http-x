@@ -16,6 +16,7 @@ import static dev.scx.http.x.http1.headers.transfer_encoding.TransferEncoding.CH
 /// @version 0.0.1
 public final class Http1Writer {
 
+    private static final ByteChunk CONTINUE_100_BYTES = ByteChunk.of("HTTP/1.1 100 Continue\r\n\r\n");
     private static final ByteChunk CRLF_BYTES = ByteChunk.of("\r\n");
 
     /// 写入 请求行
@@ -59,6 +60,11 @@ public final class Http1Writer {
         }
 
         return new ContentLengthByteOutput(byteOutput, contentLength);
+    }
+
+    /// 发送 CONTINUE_100
+    public static void writeContinue100(ByteOutput byteOutput) throws ScxIOException, AlreadyClosedException {
+        byteOutput.write(CONTINUE_100_BYTES);
     }
 
 }

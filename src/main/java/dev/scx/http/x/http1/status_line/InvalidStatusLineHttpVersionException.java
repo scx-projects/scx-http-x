@@ -10,6 +10,7 @@ public final class InvalidStatusLineHttpVersionException extends RuntimeExceptio
 
     public final String httpVersionStr;
 
+    /// 不允许外界创建
     InvalidStatusLineHttpVersionException(String httpVersionStr) {
         this.httpVersionStr = httpVersionStr;
         super("Invalid HttpVersion : " + httpVersionStr);

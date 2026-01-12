@@ -13,6 +13,7 @@ public final class InvalidRequestLineException extends RuntimeException implemen
 
     public final String requestLineStr;
 
+    /// 不允许外界创建
     InvalidRequestLineException(String requestLineStr) {
         super("Invalid RequestLine : " + requestLineStr);
         this.requestLineStr = requestLineStr;
