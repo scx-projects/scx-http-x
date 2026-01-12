@@ -13,6 +13,7 @@ public final class InvalidRequestLineHttpVersionException extends RuntimeExcepti
 
     public final String httpVersionStr;
 
+    /// 不允许外界创建
     InvalidRequestLineHttpVersionException(String httpVersionStr) {
         this.httpVersionStr = httpVersionStr;
         super("Invalid HttpVersion : " + httpVersionStr);

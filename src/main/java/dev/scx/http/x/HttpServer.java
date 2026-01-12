@@ -18,8 +18,8 @@ import java.util.List;
 
 import static dev.scx.http.version.HttpVersion.HTTP_1_1;
 import static dev.scx.http.version.HttpVersion.HTTP_2;
-import static dev.scx.http.x.HttpServerHelper.configServerTLS;
-import static dev.scx.http.x.SocketIOHelper.createSocketIO;
+import static dev.scx.http.x.helper.SocketIOHelper.createSocketIO;
+import static dev.scx.http.x.helper.TLSHelper.configServerTLS;
 
 /// Http 服务器
 ///
@@ -39,6 +39,8 @@ public final class HttpServer implements ScxHttpServer {
         this.options = options;
         this.tcpServer = new TCPServer(options.tcpServerOptions());
         this.tcpServer.onConnect(this::handle);
+        this.requestHandler = null;
+        this.errorHandler = null;
     }
 
     public HttpServer() {
@@ -57,7 +59,6 @@ public final class HttpServer implements ScxHttpServer {
         return null;
     }
 
-    /// 注意这里 整个 handle 是完全同步阻塞的.
     private void handle(Socket tcpSocket) {
         // 1. 处理 TLS
         if (options.tls() != null) {

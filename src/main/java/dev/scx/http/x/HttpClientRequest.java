@@ -27,7 +27,7 @@ import static dev.scx.http.method.HttpMethod.GET;
 import static dev.scx.http.sender.ScxHttpSenderStatus.NOT_SENT;
 import static dev.scx.http.version.HttpVersion.HTTP_1_1;
 import static dev.scx.http.version.HttpVersion.HTTP_2;
-import static dev.scx.http.x.SocketIOHelper.createSocketIO;
+import static dev.scx.http.x.helper.SocketIOHelper.createSocketIO;
 
 /// 支持动态 选择协议的 Request (只支持发送一次).
 ///
@@ -59,7 +59,7 @@ public final class HttpClientRequest implements Http1ClientRequest, Http2ClientR
 
     private ScxHttpClientResponse send0(MediaWriter mediaWriter) throws IllegalSenderStateException, ScxIOException, AlreadyClosedException {
 
-        // 检查发送状态
+        // 检查发送状态 todo 这里和 sendRequest 重复判断了
         if (senderStatus != NOT_SENT) {
             throw new IllegalSenderStateException(senderStatus);
         }

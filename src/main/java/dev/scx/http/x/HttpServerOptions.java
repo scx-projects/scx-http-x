@@ -1,7 +1,7 @@
 package dev.scx.http.x;
 
 import dev.scx.http.x.http1.Http1ServerConnectionOptions;
-import dev.scx.http.x.http1.Http1UpgradeHandler;
+import dev.scx.http.x.http1.Http1UpgradeRequestFactory;
 import dev.scx.http.x.http1.headers.upgrade.ScxUpgrade;
 import dev.scx.http.x.http2.Http2ServerConnectionOptions;
 import dev.scx.tcp.TCPServerOptions;
@@ -104,13 +104,13 @@ public final class HttpServerOptions {
         return this;
     }
 
-    public HttpServerOptions upgradeHandlers(Map<ScxUpgrade, Http1UpgradeHandler<?>> upgradeHandlers) {
-        this.http1ServerConnectionOptions.upgradeHandlers(upgradeHandlers);
+    public HttpServerOptions upgradeRequestFactories(Map<ScxUpgrade, Http1UpgradeRequestFactory<?>> upgradeRequestFactories) {
+        this.http1ServerConnectionOptions.upgradeRequestFactories(upgradeRequestFactories);
         return this;
     }
 
-    public HttpServerOptions addUpgradeHandler(Http1UpgradeHandler<?>... upgradeHandlerList) {
-        this.http1ServerConnectionOptions.addUpgradeHandler(upgradeHandlerList);
+    public HttpServerOptions addUpgradeRequestFactory(Http1UpgradeRequestFactory<?>... upgradeRequestFactories) {
+        this.http1ServerConnectionOptions.addUpgradeRequestFactory(upgradeRequestFactories);
         return this;
     }
 

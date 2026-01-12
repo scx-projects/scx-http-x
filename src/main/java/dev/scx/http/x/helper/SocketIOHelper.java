@@ -1,8 +1,14 @@
-package dev.scx.http.x;
+package dev.scx.http.x.helper;
+
+import dev.scx.http.x.SocketIO;
 
 import java.io.IOException;
 import java.net.Socket;
 
+/// SocketIOHelper
+///
+/// @author scx567888
+/// @version 0.0.1
 public final class SocketIOHelper {
 
     /// 失败内部会关闭 Socket

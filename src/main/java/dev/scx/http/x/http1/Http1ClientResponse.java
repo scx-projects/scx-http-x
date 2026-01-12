@@ -12,9 +12,8 @@ import dev.scx.io.ByteInput;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.ScxIOException;
 
-import static dev.scx.http.version.HttpVersion.HTTP_1_1;
-import static dev.scx.http.x.http1.Http1ServerHelper.getLocalPeer;
-import static dev.scx.http.x.http1.Http1ServerHelper.getRemotePeer;
+import static dev.scx.http.x.helper.PeerInfoHelper.getLocalPeer;
+import static dev.scx.http.x.helper.PeerInfoHelper.getRemotePeer;
 
 /// Http1ClientResponse
 ///
@@ -22,32 +21,40 @@ import static dev.scx.http.x.http1.Http1ServerHelper.getRemotePeer;
 /// @version 0.0.1
 public final class Http1ClientResponse implements ScxHttpClientResponse {
 
-    private final Http1StatusLine statusLine;
+    /// 对外公开 connection 字段, 以便 实现更底层功能.
+    public final Http1ClientConnection connection;
+
+    private final ScxHttpStatusCode statusCode;
+    private final HttpVersion version;
+    private final String reasonPhrase;
     private final Http1Headers headers;
     private final ByteInput body;
     private final PeerInfo remotePeer;
     private final PeerInfo localPeer;
 
     public Http1ClientResponse(Http1StatusLine statusLine, Http1Headers headers, ByteInput bodyByteInput, Http1ClientConnection connection) {
-        this.statusLine = statusLine;
+        this.statusCode = statusLine.statusCode();
+        this.version = statusLine.httpVersion();
+        this.reasonPhrase = statusLine.reasonPhrase();
         this.headers = headers;
         this.body = bodyByteInput;
-        this.remotePeer = getRemotePeer(connection.socketIO.tcpSocket);
-        this.localPeer = getLocalPeer(connection.socketIO.tcpSocket);
+        this.connection = connection;
+        this.remotePeer = getRemotePeer(this.connection.socketIO.tcpSocket);
+        this.localPeer = getLocalPeer(this.connection.socketIO.tcpSocket);
     }
 
     @Override
     public ScxHttpStatusCode statusCode() {
-        return statusLine.statusCode();
+        return statusCode;
     }
 
     @Override
     public HttpVersion version() {
-        return HTTP_1_1;
+        return version;
     }
 
     public String reasonPhrase() {
-        return statusLine.reasonPhrase();
+        return reasonPhrase;
     }
 
     @Override

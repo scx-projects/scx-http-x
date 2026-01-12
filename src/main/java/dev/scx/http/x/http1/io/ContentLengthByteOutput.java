@@ -65,8 +65,4 @@ public final class ContentLengthByteOutput implements ByteOutput {
         byteOutput.close();
     }
 
-    public ByteOutput byteOutput() {
-        return byteOutput;
-    }
-
 }

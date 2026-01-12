@@ -4,7 +4,7 @@ package dev.scx.http.x.http1.headers.expect;
 ///
 /// @author scx567888
 /// @version 0.0.1
-public interface ScxExpect {
+public sealed interface ScxExpect permits Expect, ScxExpectImpl {
 
     static ScxExpect of(String v) {
         // 优先使用 Expect

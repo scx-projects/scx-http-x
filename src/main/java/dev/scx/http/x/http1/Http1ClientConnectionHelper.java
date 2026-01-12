@@ -8,17 +8,18 @@ import dev.scx.http.x.http1.request_line.request_target.*;
 
 import static dev.scx.http.headers.HttpHeaderName.HOST;
 import static dev.scx.http.method.HttpMethod.*;
+import static dev.scx.http.x.helper.SchemeHelper.getDefaultPort;
 import static dev.scx.http.x.http1.headers.transfer_encoding.TransferEncoding.CHUNKED;
 
-final class Http1ClientHelper {
+/// Http1ClientConnectionHelper
+///
+/// @author scx567888
+/// @version 0.0.1
+final class Http1ClientConnectionHelper {
 
-    public static int getDefaultPort(String scheme) throws IllegalArgumentException {
-        scheme = scheme.toLowerCase();
-        return switch (scheme) {
-            case "http", "ws" -> 80;
-            case "https", "wss" -> 443;
-            default -> throw new IllegalArgumentException("Unsupported scheme: " + scheme);
-        };
+    /// 检查请求是否 存在请求体
+    public static boolean checkRequestHasBody(ScxHttpMethod method) {
+        return GET != method;
     }
 
     /// 创建 RequestTarget
@@ -104,11 +105,6 @@ final class Http1ClientHelper {
         }
 
         return headers;
-    }
-
-    /// 检查请求是否 存在请求体
-    public static boolean checkRequestHasBody(ScxHttpMethod method) {
-        return GET != method;
     }
 
 }

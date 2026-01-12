@@ -10,6 +10,7 @@ public final class InvalidStatusLineStatusCodeException extends RuntimeException
 
     public final String statusCodeStr;
 
+    /// 不允许外界创建
     InvalidStatusLineStatusCodeException(String statusCodeStr) {
         this.statusCodeStr = statusCodeStr;
         super("Invalid StatusCode : " + statusCodeStr);

@@ -8,7 +8,7 @@ public final class Http1ClientConnectionOptions {
 
     private int maxStatusLineSize; // 最大响应行大小
     private int maxHeaderSize; // 最大请求头大小
-    private int maxPayloadSize; // 最大请求体大小
+    private long maxPayloadSize; // 最大请求体大小
 
     public Http1ClientConnectionOptions() {
         this.maxStatusLineSize = 1024 * 64; // 默认 64 KB
@@ -40,11 +40,11 @@ public final class Http1ClientConnectionOptions {
         return this;
     }
 
-    public int maxPayloadSize() {
+    public long maxPayloadSize() {
         return maxPayloadSize;
     }
 
-    public Http1ClientConnectionOptions maxPayloadSize(int maxPayloadSize) {
+    public Http1ClientConnectionOptions maxPayloadSize(long maxPayloadSize) {
         this.maxPayloadSize = maxPayloadSize;
         return this;
     }
