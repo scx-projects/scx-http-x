@@ -2,7 +2,6 @@ package dev.scx.http.x.http1;
 
 import dev.scx.http.exception.BadRequestException;
 import dev.scx.http.headers.ScxHttpHeaders;
-import dev.scx.http.peer_info.PeerInfo;
 import dev.scx.http.status_code.ScxHttpStatusCode;
 import dev.scx.http.x.http1.headers.Http1Headers;
 import dev.scx.http.x.http1.headers.upgrade.ScxUpgrade;
@@ -12,9 +11,6 @@ import dev.scx.io.ByteInput;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.ScxIOException;
 
-import java.net.InetSocketAddress;
-import java.net.Socket;
-
 import static dev.scx.http.headers.HttpHeaderName.HOST;
 import static dev.scx.http.method.HttpMethod.GET;
 import static dev.scx.http.status_code.HttpStatusCode.*;
@@ -22,7 +18,11 @@ import static dev.scx.http.status_code.ScxHttpStatusCodeHelper.getReasonPhrase;
 import static dev.scx.http.x.http1.headers.connection.Connection.*;
 import static dev.scx.http.x.http1.headers.transfer_encoding.TransferEncoding.CHUNKED;
 
-final class Http1ServerHelper {
+/// Http1ServerConnectionHelper
+///
+/// @author scx567888
+/// @version 0.0.1
+final class Http1ServerConnectionHelper {
 
     /// 验证 Http/1.1 中的 Host, 这里我们只校验是否存在且只有一个值
     public static void validateHost(ScxHttpHeaders headers) throws BadRequestException {
@@ -45,24 +45,11 @@ final class Http1ServerHelper {
         return requestLine.method() == GET && headers.connection() == UPGRADE ? headers.upgrade() : null;
     }
 
-
     /// 检查响应是否 存在响应体
     public static boolean checkResponseHasBody(ScxHttpStatusCode status) {
         return SWITCHING_PROTOCOLS != status &&
             NO_CONTENT != status &&
             NOT_MODIFIED != status;
-    }
-
-    public static PeerInfo getRemotePeer(Socket tcpSocket) {
-        var address = (InetSocketAddress) tcpSocket.getRemoteSocketAddress();
-        // todo 未完成 tls 信息没有写入
-        return PeerInfo.of().address(address).host(address.getHostString()).port(address.getPort());
-    }
-
-    public static PeerInfo getLocalPeer(Socket tcpSocket) {
-        var address = (InetSocketAddress) tcpSocket.getLocalSocketAddress();
-        // todo 未完成 tls 信息没有写入
-        return PeerInfo.of().address(address).host(address.getHostString()).port(address.getPort());
     }
 
     /// 消耗 Body
@@ -81,6 +68,7 @@ final class Http1ServerHelper {
         return new Http1StatusLine(statusCode, reasonPhrase);
     }
 
+    // todo 这里有点问题
     public static Http1Headers configResponseHeaders(Http1ServerResponse response, long expectedLength) {
         var headers = response.headers();
         var statusCode = response.statusCode();
