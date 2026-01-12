@@ -17,7 +17,7 @@ public final class Http1ClientRequestByteOutput extends AbstractByteOutput {
     private final Http1ClientRequest request;
     private final Http1ClientConnection connection;
 
-    public Http1ClientRequestByteOutput(Http1ClientRequest request,Http1ClientConnection connection) {
+    public Http1ClientRequestByteOutput(Http1ClientRequest request, Http1ClientConnection connection) {
         this.request = request;
         this.connection = connection;
     }

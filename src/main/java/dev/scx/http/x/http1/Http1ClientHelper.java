@@ -3,17 +3,11 @@ package dev.scx.http.x.http1;
 import dev.scx.http.method.ScxHttpMethod;
 import dev.scx.http.uri.ScxURI;
 import dev.scx.http.x.http1.headers.Http1Headers;
-import dev.scx.http.x.http1.io.ContentLengthByteOutput;
-import dev.scx.http.x.http1.io.HttpChunkedByteOutput;
 import dev.scx.http.x.http1.request_line.Http1RequestLine;
 import dev.scx.http.x.http1.request_line.request_target.*;
-import dev.scx.io.ByteOutput;
-import dev.scx.io.exception.AlreadyClosedException;
-import dev.scx.io.exception.ScxIOException;
 
 import static dev.scx.http.headers.HttpHeaderName.HOST;
 import static dev.scx.http.method.HttpMethod.*;
-import static dev.scx.http.status_code.ScxHttpStatusCodeHelper.getReasonPhrase;
 import static dev.scx.http.x.http1.headers.transfer_encoding.TransferEncoding.CHUNKED;
 
 final class Http1ClientHelper {
@@ -67,8 +61,8 @@ final class Http1ClientHelper {
 
     public static Http1Headers configRequestHeaders(Http1ClientRequest request, long expectedLength) {
         var method = request.method();
-        var uri=request.uri();
-        var headers= request.headers();
+        var uri = request.uri();
+        var headers = request.headers();
 
         // 处理头相关
         // 1, 处理 HOST 相关

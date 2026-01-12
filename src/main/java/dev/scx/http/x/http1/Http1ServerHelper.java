@@ -6,12 +6,9 @@ import dev.scx.http.peer_info.PeerInfo;
 import dev.scx.http.status_code.ScxHttpStatusCode;
 import dev.scx.http.x.http1.headers.Http1Headers;
 import dev.scx.http.x.http1.headers.upgrade.ScxUpgrade;
-import dev.scx.http.x.http1.io.ContentLengthByteOutput;
-import dev.scx.http.x.http1.io.HttpChunkedByteOutput;
 import dev.scx.http.x.http1.request_line.Http1RequestLine;
 import dev.scx.http.x.http1.status_line.Http1StatusLine;
 import dev.scx.io.ByteInput;
-import dev.scx.io.ByteOutput;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.ScxIOException;
 
@@ -20,12 +17,10 @@ import java.net.Socket;
 
 import static dev.scx.http.headers.HttpHeaderName.HOST;
 import static dev.scx.http.method.HttpMethod.GET;
-import static dev.scx.http.sender.ScxHttpSenderStatus.SENDING;
 import static dev.scx.http.status_code.HttpStatusCode.*;
 import static dev.scx.http.status_code.ScxHttpStatusCodeHelper.getReasonPhrase;
 import static dev.scx.http.x.http1.headers.connection.Connection.*;
 import static dev.scx.http.x.http1.headers.transfer_encoding.TransferEncoding.CHUNKED;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 final class Http1ServerHelper {
 
