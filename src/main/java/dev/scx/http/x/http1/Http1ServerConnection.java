@@ -74,11 +74,29 @@ public final class Http1ServerConnection {
         // 标记发送中
         response._setSenderStatus(SENDING);
 
-        // 1, 写入 响应行
-        Http1Writer.writeStatusLine(socketIO.out, createStatusLine(response));
+        try {
+            // 1, 写入 响应行
+            Http1Writer.writeStatusLine(socketIO.out, createStatusLine(response));
+        }catch (ScxIOException|AlreadyClosedException e){
+            // 标记发送失败
+            response._setSenderStatus(FAILED);
+            // 直接终止 底层 Socket 连接
+            socketIO.closeQuietly();
+            throw e;
+        }
 
-        // 2, 配置 头
-        Http1Writer.writeHeaders(socketIO.out, configResponseHeaders(response, expectedLength));
+        try {
+
+            // 2, 配置 头
+            Http1Writer.writeHeaders(socketIO.out, configResponseHeaders(response, expectedLength));
+        }catch (ScxIOException|AlreadyClosedException e){
+            // 标记发送失败
+            response._setSenderStatus(FAILED);
+            // 直接终止 底层 Socket 连接
+            socketIO.closeQuietly();
+            throw e;
+        }
+
 
         // 3, 创建 byteOutput
         ByteOutput byteOutput = createResponseByteOutput(response);
