@@ -48,7 +48,7 @@ public final class Http1ServerConnection {
     private final Http1ServerConnectionOptions options;
     private final Function1Void<ScxHttpServerRequest, ?> requestHandler;
     private final ScxHttpServerErrorHandler errorHandler;
-    private boolean stopped;
+    private volatile boolean stopped;
 
     public Http1ServerConnection(SocketIO socketIO, Http1ServerConnectionOptions options, Function1Void<ScxHttpServerRequest, ?> requestHandler, ScxHttpServerErrorHandler errorHandler) {
         this.socketIO = socketIO;
@@ -141,8 +141,8 @@ public final class Http1ServerConnection {
 
             // 7.3, 写入 body
             mediaWriter.write(byteOutput);
-        } catch (ScxIOException | AlreadyClosedException e) {
-            // 发生 IO 级别异常 我们需要关闭 socket
+        } catch (RuntimeException e) {
+            // 发生 任何异常 我们都需要关闭 socket. 因为无法保证数据依然处于正确协议状态
             response._setSenderStatus(FAILED);
             socketIO.closeQuietly();
             throw e;
