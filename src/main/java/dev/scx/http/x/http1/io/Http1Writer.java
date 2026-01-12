@@ -36,22 +36,27 @@ public final class Http1Writer {
 
     /// 写入 headers
     public static void writeHeaders(ByteOutput byteOutput, Http1Headers headers) throws ScxIOException, AlreadyClosedException {
-        // todo 空头发什么?
         var headersStr = headers.encode();
         var headersBytes = headersStr.getBytes();
         byteOutput.write(headersBytes);
         byteOutput.write(CRLF_BYTES);
     }
 
-
-    public static ByteOutput createBodyByteOutput( ByteOutput byteOutput,Http1Headers headers) {
-
+    /// 创建 Body 输出流
+    public static ByteOutput createBodyByteOutput(ByteOutput byteOutput, Http1Headers headers) {
+        // 分块的优先级 大于 contentLength
         var transferEncoding = headers.transferEncoding();
         if (transferEncoding == CHUNKED) {
             return new HttpChunkedByteOutput(byteOutput);
         }
 
+        // 采用 contentLength
         var contentLength = headers.contentLength();
+
+        // 没有我们看作 0
+        if (contentLength == null) {
+            contentLength = 0L;
+        }
 
         return new ContentLengthByteOutput(byteOutput, contentLength);
     }
