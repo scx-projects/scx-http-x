@@ -24,8 +24,7 @@ import java.lang.System.Logger;
 
 import static dev.scx.http.error_handler.ErrorPhase.SYSTEM;
 import static dev.scx.http.error_handler.ErrorPhase.USER;
-import static dev.scx.http.sender.ScxHttpSenderStatus.NOT_SENT;
-import static dev.scx.http.sender.ScxHttpSenderStatus.SENDING;
+import static dev.scx.http.sender.ScxHttpSenderStatus.*;
 import static dev.scx.http.x.error_handler.DefaultHttpServerErrorHandler.DEFAULT_HTTP_SERVER_ERROR_HANDLER;
 import static dev.scx.http.x.http1.Http1ServerConnectionHelper.*;
 import static dev.scx.http.x.http1.headers.connection.Connection.CLOSE;
@@ -132,14 +131,23 @@ public final class Http1ServerConnection {
         // 6, 创建 byteOutput
         var byteOutput = Http1Writer.createBodyByteOutput(baseByteOutput, headers);
 
-        // 7, 写入 响应行
-        Http1Writer.writeStatusLine(socketIO.out, statusLine);
+        // 7, 写入远端
+        try {
+            // 7.1, 写入 响应行
+            Http1Writer.writeStatusLine(socketIO.out, statusLine);
 
-        // 8, 写入 头
-        Http1Writer.writeHeaders(socketIO.out, headers);
+            // 7.2, 写入 头
+            Http1Writer.writeHeaders(socketIO.out, headers);
 
-        // 9, 写入 body
-        mediaWriter.write(byteOutput);
+            // 7.3, 写入 body
+            mediaWriter.write(byteOutput);
+        } catch (ScxIOException | AlreadyClosedException e) {
+            // 发生 IO 级别异常 我们需要关闭 socket
+            response._setSenderStatus(FAILED);
+            socketIO.closeQuietly();
+            throw e;
+        }
+
     }
 
     /// 启动虚拟线程进行读取.
