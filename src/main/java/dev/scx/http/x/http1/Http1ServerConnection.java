@@ -46,6 +46,7 @@ public final class Http1ServerConnection {
 
     /// 对外公开 SocketIO 字段, 以便 实现更底层功能.
     public final SocketIO socketIO;
+
     private final Http1ServerConnectionOptions options;
     private final Function1Void<ScxHttpServerRequest, ?> requestHandler;
     private final ScxHttpServerErrorHandler errorHandler;

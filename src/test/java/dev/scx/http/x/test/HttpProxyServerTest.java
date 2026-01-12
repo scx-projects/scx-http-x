@@ -30,7 +30,7 @@ public class HttpProxyServerTest {
             if (c.method() == HttpMethod.CONNECT) {
                 System.out.println("收到 HTTPS 代理请求 : " + c.uri());
                 //1, 获取连接对象
-                var serverConnection = request.response().connection;
+                var serverConnection = request.connection;
                 //2, 交接 Socket 所有权
                 serverConnection.stop();
                 //3, 获取 当前连接的 底层 tcpSocket 内容

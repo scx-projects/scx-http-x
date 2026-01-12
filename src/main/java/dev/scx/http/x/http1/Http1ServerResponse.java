@@ -21,8 +21,10 @@ import static dev.scx.http.sender.ScxHttpSenderStatus.NOT_SENT;
 /// @version 0.0.1
 public final class Http1ServerResponse implements ScxHttpServerResponse {
 
-    private final Http1ServerRequest request;
+    /// 对外公开 connection 字段, 以便 实现更底层功能.
     public final Http1ServerConnection connection;
+
+    private final Http1ServerRequest request;
     private final ReentrantLock sendLock; // 避免用户 多线程 send 搞乱状态
     private ScxHttpStatusCode statusCode;
     private Http1Headers headers;

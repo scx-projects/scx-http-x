@@ -22,6 +22,9 @@ import static dev.scx.http.x.http1.headers.connection.Connection.CLOSE;
 /// @version 0.0.1
 public final class Http1ServerRequest implements ScxHttpServerRequest {
 
+    /// 对外公开 connection 字段, 以便 实现更底层功能.
+    public final Http1ServerConnection connection;
+
     private final ScxHttpMethod method;
     private final ScxURI uri;
     private final HttpVersion version;
@@ -37,9 +40,10 @@ public final class Http1ServerRequest implements ScxHttpServerRequest {
         this.version = requestLine.httpVersion();
         this.headers = headers;
         this.body = bodyByteInput;
-        this.remotePeer = getRemotePeer(connection.socketIO.tcpSocket);
-        this.localPeer = getLocalPeer(connection.socketIO.tcpSocket);
-        this.response = new Http1ServerResponse(this, connection);
+        this.connection = connection;
+        this.remotePeer = getRemotePeer(this.connection.socketIO.tcpSocket);
+        this.localPeer = getLocalPeer(this.connection.socketIO.tcpSocket);
+        this.response = new Http1ServerResponse(this, this.connection);
     }
 
     @Override
