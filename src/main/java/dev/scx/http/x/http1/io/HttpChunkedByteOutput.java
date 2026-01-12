@@ -77,8 +77,4 @@ public final class HttpChunkedByteOutput implements ByteOutput {
         byteOutput.write(ByteChunk.of(bytes, pos, 8));
     }
 
-    public ByteOutput byteOutput() {
-        return byteOutput;
-    }
-
 }

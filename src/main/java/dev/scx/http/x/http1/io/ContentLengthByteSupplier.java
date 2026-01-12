@@ -60,8 +60,4 @@ public final class ContentLengthByteSupplier implements ByteSupplier {
         }
     }
 
-    public ByteInput byteInput() {
-        return byteInput;
-    }
-
 }
