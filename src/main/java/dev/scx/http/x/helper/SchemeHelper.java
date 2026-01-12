@@ -1,4 +1,4 @@
-package dev.scx.http.x.scheme;
+package dev.scx.http.x.helper;
 
 /// SchemeHelper
 ///

@@ -1,4 +1,4 @@
-package dev.scx.http.x.tls;
+package dev.scx.http.x.helper;
 
 import dev.scx.tcp.tls.TLS;
 

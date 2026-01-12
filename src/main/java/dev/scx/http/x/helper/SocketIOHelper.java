@@ -1,4 +1,6 @@
-package dev.scx.http.x;
+package dev.scx.http.x.helper;
+
+import dev.scx.http.x.SocketIO;
 
 import java.io.IOException;
 import java.net.Socket;

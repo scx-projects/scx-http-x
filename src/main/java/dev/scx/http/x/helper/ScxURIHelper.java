@@ -1,10 +1,10 @@
-package dev.scx.http.x.uri;
+package dev.scx.http.x.helper;
 
 import dev.scx.http.uri.ScxURI;
 
 import java.net.InetSocketAddress;
 
-import static dev.scx.http.x.scheme.SchemeHelper.getDefaultPort;
+import static dev.scx.http.x.helper.SchemeHelper.getDefaultPort;
 
 /// ScxURIHelper
 ///
