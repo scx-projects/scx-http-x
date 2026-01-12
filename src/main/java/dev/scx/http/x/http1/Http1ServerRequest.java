@@ -12,8 +12,8 @@ import dev.scx.io.ByteInput;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.ScxIOException;
 
-import static dev.scx.http.x.http1.Http1Helper.getLocalPeer;
-import static dev.scx.http.x.http1.Http1Helper.getRemotePeer;
+import static dev.scx.http.x.http1.Http1ServerHelper.getLocalPeer;
+import static dev.scx.http.x.http1.Http1ServerHelper.getRemotePeer;
 import static dev.scx.http.x.http1.headers.connection.Connection.CLOSE;
 
 /// Http1ServerRequest

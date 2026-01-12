@@ -1,6 +1,5 @@
 package dev.scx.http.x.http1;
 
-import dev.scx.http.ScxHttpServerRequest;
 import dev.scx.http.ScxHttpServerResponse;
 import dev.scx.http.headers.ScxHttpHeaders;
 import dev.scx.http.media.MediaWriter;
@@ -41,7 +40,7 @@ public final class Http1ServerResponse implements ScxHttpServerResponse {
     }
 
     @Override
-    public ScxHttpServerRequest request() {
+    public Http1ServerRequest request() {
         return request;
     }
 
