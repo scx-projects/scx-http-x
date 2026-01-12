@@ -8,10 +8,8 @@ import dev.scx.http.x.SocketIO;
 /// 占位 (可能永远都不会实现)
 public class Http2ServerConnection {
 
-    private final SocketIO socketIO;
-
     public Http2ServerConnection(SocketIO socketIO, Http2ServerConnectionOptions options, Function1Void<ScxHttpServerRequest, ?> requestHandler, ScxHttpServerErrorHandler errorHandler) {
-        this.socketIO = socketIO;
+
     }
 
     public void start() {

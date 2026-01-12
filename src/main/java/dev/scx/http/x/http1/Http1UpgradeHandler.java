@@ -8,6 +8,8 @@ import dev.scx.io.ByteInput;
 
 /// Http1UpgradeHandler
 ///
+/// 本质上 可以看作一种 特殊的 RequestFactory
+///
 /// @author scx567888
 /// @version 0.0.1
 public interface Http1UpgradeHandler<T extends ScxHttpServerRequest> {
@@ -16,6 +18,6 @@ public interface Http1UpgradeHandler<T extends ScxHttpServerRequest> {
     ScxUpgrade upgradeProtocol();
 
     /// 创建升级之后的 Request
-    T createUpgradedRequest(Http1ServerConnection connection, Http1RequestLine requestLine, Http1Headers headers, ByteInput bodyByteInput);
+    T createUpgradedRequest(Http1RequestLine requestLine, Http1Headers headers, ByteInput bodyByteInput, Http1ServerConnection connection);
 
 }

@@ -43,6 +43,18 @@ public final class Http1Reader {
         }
     }
 
+    /// 读取 响应行
+    public static Http1StatusLine readStatusLine(ByteInput byteInput, int maxStatusLineSize) throws ScxIOException, AlreadyClosedException, NoMoreDataException, StatusLineToLongException, InvalidStatusLineException, InvalidStatusLineStatusCodeException, InvalidStatusLineHttpVersionException {
+        try {
+            var statusLineBytes = byteInput.readUntil(CRLF_BYTES, maxStatusLineSize);
+            var statusLineStr = new String(statusLineBytes);
+            return Http1StatusLine.of(statusLineStr);
+        } catch (NoMatchFoundException e) {
+            // 在指定长度内未匹配到 这里抛出响应行过大异常.
+            throw new StatusLineToLongException("响应行过长 !!!");
+        }
+    }
+
     /// 读取 headers
     public static Http1Headers readHeaders(ByteInput byteInput, int maxHeaderSize) throws ScxIOException, AlreadyClosedException, NoMoreDataException, HeaderTooLargeException {
         try {
@@ -66,7 +78,7 @@ public final class Http1Reader {
     /// 这里我们返回的 ByteSupplier 是直接关联了 ByteInput 的 ByteSupplier,
     /// 也就是说 如果 调用 ByteSupplier 的 close, 会连带关闭 ByteInput 的 close.
     /// 如果想做到 中断 close 请在上层二次包装.
-    public static ByteSupplier readBodyByteInput(Http1Headers headers, ByteInput byteInput, long maxPayloadSize) throws ContentLengthBodyTooLargeException {
+    public static ByteSupplier createBodyByteSupplier(Http1Headers headers, ByteInput byteInput, long maxPayloadSize) throws ContentLengthBodyTooLargeException {
         // HTTP/1.1 本质上只有两种请求体格式 1, 分块传输 2, 指定长度 (当然也可以没有长度 那就表示没有请求体)
 
         // 1, 因为 分块传输的优先级高于 contentLength 所以先判断是否为分块传输
@@ -87,18 +99,6 @@ public final class Http1Reader {
 
         // 3, 没有长度的空请求体
         return new NullContentByteSupplier(byteInput);
-    }
-
-    /// 读取响应行
-    public static Http1StatusLine readStatusLine(ByteInput byteInput, int maxStatusLineSize) throws ScxIOException, AlreadyClosedException, NoMoreDataException, StatusLineToLongException, InvalidStatusLineException, InvalidStatusLineStatusCodeException, InvalidStatusLineHttpVersionException {
-        try {
-            var statusLineBytes = byteInput.readUntil(CRLF_BYTES, maxStatusLineSize);
-            var statusLineStr = new String(statusLineBytes);
-            return Http1StatusLine.of(statusLineStr);
-        } catch (NoMatchFoundException e) {
-            // 在指定长度内未匹配到 这里抛出响应行过大异常.
-            throw new StatusLineToLongException("响应行过长 !!!");
-        }
     }
 
 }

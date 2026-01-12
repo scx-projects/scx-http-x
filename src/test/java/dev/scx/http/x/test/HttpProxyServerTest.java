@@ -32,7 +32,7 @@ public class HttpProxyServerTest {
                 //1, 获取连接对象
                 var serverConnection = request.connection;
                 //2, 交接 Socket 所有权
-                serverConnection.transferSocketIO();
+                serverConnection.stop();
                 //3, 获取 当前连接的 底层 tcpSocket 内容
                 var serverTCPSocket = serverConnection.socketIO.tcpSocket;
                 //4, 创建 远端连接
@@ -89,13 +89,13 @@ public class HttpProxyServerTest {
                     .method(request.method())
                     .uri(request.uri())
                     .headers(request.headers())
-                    .send(request.body().byteInput());
+                    .send(request.body());
 
                 request.response()
                     .reasonPhrase(response.reasonPhrase())
                     .statusCode(response.statusCode())
                     .headers(response.headers())
-                    .send(response.body().byteInput());
+                    .send(response.body());
 
             }
         });

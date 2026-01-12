@@ -14,12 +14,12 @@ import dev.scx.io.output.AbstractByteOutput;
 /// @version 0.0.1
 public final class Http1ClientRequestByteOutput extends AbstractByteOutput {
 
-    private final Http1ClientConnection connection;
     private final Http1ClientRequest request;
+    private final Http1ClientConnection connection;
 
-    public Http1ClientRequestByteOutput(Http1ClientConnection connection, Http1ClientRequest request) {
-        this.connection = connection;
+    public Http1ClientRequestByteOutput(Http1ClientRequest request,Http1ClientConnection connection) {
         this.request = request;
+        this.connection = connection;
     }
 
     @Override

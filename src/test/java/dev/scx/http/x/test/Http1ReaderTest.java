@@ -170,7 +170,7 @@ public class Http1ReaderTest {
     public static void test13() throws ContentLengthBodyTooLargeException {
         // 数据不足
         var rawInput = createByteInput("body".getBytes());
-        var byteSupplier = Http1Reader.readBodyByteInput((Http1Headers) new Http1Headers().contentLength(10), rawInput, 9999);
+        var byteSupplier = Http1Reader.createBodyByteSupplier((Http1Headers) new Http1Headers().contentLength(10), rawInput, 9999);
         var bodyInput = createByteInput(byteSupplier);
         Assert.assertThrows(ContentLengthBodyTooShortException.class, () -> {
             var bodyStr = new String(bodyInput.readAll());
@@ -182,7 +182,7 @@ public class Http1ReaderTest {
         // contentLength 太大
         var rawInput = createByteInput("body".getBytes());
         Assert.assertThrows(ContentLengthBodyTooLargeException.class, () -> {
-            var byteSupplier = Http1Reader.readBodyByteInput((Http1Headers) new Http1Headers().contentLength(999), rawInput, 100);
+            var byteSupplier = Http1Reader.createBodyByteSupplier((Http1Headers) new Http1Headers().contentLength(999), rawInput, 100);
         });
     }
 
@@ -191,7 +191,7 @@ public class Http1ReaderTest {
         // 数据异常
         var rawInput = createByteInput("body".getBytes());
         rawInput.close();
-        var byteSupplier = Http1Reader.readBodyByteInput((Http1Headers) new Http1Headers().contentLength(10), rawInput, 9999);
+        var byteSupplier = Http1Reader.createBodyByteSupplier((Http1Headers) new Http1Headers().contentLength(10), rawInput, 9999);
         var bodyInput = createByteInput(byteSupplier);
         // 这里应该直接 ScxIOException 异常
         Assert.assertThrows(ScxIOException.class, () -> {
@@ -210,7 +210,7 @@ public class Http1ReaderTest {
 
         var rawInput = createByteInput(a.bytes());
 
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 100);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 100);
 
         var bodyInput = createByteInput(byteSupplier);
         var data = new String(bodyInput.readAll());
@@ -229,7 +229,7 @@ public class Http1ReaderTest {
         var rawInput = createByteInput(a.bytes());
 
         // 长度太长
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 5);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 5);
 
         var bodyInput = createByteInput(byteSupplier);
         Assert.assertThrows(HttpChunkedBodyTooLargeException.class, () -> {
@@ -242,7 +242,7 @@ public class Http1ReaderTest {
         // 错误数据
         var rawInput = createByteInput("abc".getBytes());
 
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
 
         var bodyInput = createByteInput(byteSupplier);
 
@@ -254,7 +254,7 @@ public class Http1ReaderTest {
     @Test
     public static void test19_invalidChunkSize() throws ContentLengthBodyTooLargeException {
         var rawInput = createByteInput("Z\r\nabc\r\n0\r\n\r\n".getBytes());
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
         var bodyInput = createByteInput(byteSupplier);
         Assert.assertThrows(HttpChunkedParseException.class, () -> bodyInput.readAll());
     }
@@ -262,7 +262,7 @@ public class Http1ReaderTest {
     @Test
     public static void test20_incompleteChunkData() throws ContentLengthBodyTooLargeException {
         var rawInput = createByteInput("5\r\nabc\r\n0\r\n\r\n".getBytes()); // 5长度但只给了3字节
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
         var bodyInput = createByteInput(byteSupplier);
         Assert.assertThrows(HttpChunkedParseException.class, () -> bodyInput.readAll());
     }
@@ -270,7 +270,7 @@ public class Http1ReaderTest {
     @Test
     public static void test21_missingChunkEndCRLF() throws ContentLengthBodyTooLargeException {
         var rawInput = createByteInput("3\r\nabc0\r\n\r\n".getBytes()); // 3字节块没有 \r\n
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
         var bodyInput = createByteInput(byteSupplier);
         Assert.assertThrows(HttpChunkedParseException.class, () -> bodyInput.readAll());
     }
@@ -278,7 +278,7 @@ public class Http1ReaderTest {
     @Test
     public static void test22_tailNotEmpty() throws ContentLengthBodyTooLargeException {
         var rawInput = createByteInput("0\r\nX\r\n".getBytes()); // 0长度尾部非空
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
         var bodyInput = createByteInput(byteSupplier);
         Assert.assertThrows(HttpChunkedParseException.class, () -> bodyInput.readAll());
     }
@@ -291,7 +291,7 @@ public class Http1ReaderTest {
         b.write("def".getBytes());
         b.close();
         var rawInput = createByteInput(a.bytes());
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 5); // 限制 maxLength=5
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 5); // 限制 maxLength=5
         var bodyInput = createByteInput(byteSupplier);
         Assert.assertThrows(HttpChunkedBodyTooLargeException.class, () -> bodyInput.readAll());
     }
@@ -299,7 +299,7 @@ public class Http1ReaderTest {
     @Test
     public static void test24_EOFBeforeComplete() throws ContentLengthBodyTooLargeException {
         var rawInput = createByteInput("3\r\nab".getBytes()); // EOF 提前到达
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
         var bodyInput = createByteInput(byteSupplier);
         Assert.assertThrows(HttpChunkedParseException.class, () -> bodyInput.readAll());
     }
@@ -307,7 +307,7 @@ public class Http1ReaderTest {
     @Test
     public static void test25_invalidChunkSize() throws ContentLengthBodyTooLargeException {
         var rawInput = createByteInput("Z\r\nabc\r\n0\r\n\r\n".getBytes()); // Z 不是 hex
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
         var bodyInput = createByteInput(byteSupplier);
         Assert.assertThrows(HttpChunkedParseException.class, () -> bodyInput.readAll());
     }
@@ -315,7 +315,7 @@ public class Http1ReaderTest {
     @Test
     public static void test26_incompleteChunkData() throws ContentLengthBodyTooLargeException {
         var rawInput = createByteInput("5\r\nabc\r\n0\r\n\r\n".getBytes()); // 5 长度，但只给 3 字节
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
         var bodyInput = createByteInput(byteSupplier);
         Assert.assertThrows(HttpChunkedParseException.class, () -> bodyInput.readAll());
     }
@@ -323,7 +323,7 @@ public class Http1ReaderTest {
     @Test
     public static void test27_missingChunkEndCRLF() throws ContentLengthBodyTooLargeException {
         var rawInput = createByteInput("3\r\nabc0\r\n\r\n".getBytes()); // 数据块没 \r\n
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
         var bodyInput = createByteInput(byteSupplier);
         Assert.assertThrows(HttpChunkedParseException.class, () -> bodyInput.readAll());
     }
@@ -331,7 +331,7 @@ public class Http1ReaderTest {
     @Test
     public static void test28_tailNotEmpty() throws ContentLengthBodyTooLargeException {
         var rawInput = createByteInput("0\r\nX\r\n".getBytes()); // 0 长度块尾部非空
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
         var bodyInput = createByteInput(byteSupplier);
         Assert.assertThrows(HttpChunkedParseException.class, () -> bodyInput.readAll());
     }
@@ -339,7 +339,7 @@ public class Http1ReaderTest {
     @Test
     public static void test29_EOFBeforeComplete() throws ContentLengthBodyTooLargeException {
         var rawInput = createByteInput("3\r\nab".getBytes()); // 数据只提供了 2 字节
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 1000);
         var bodyInput = createByteInput(byteSupplier);
         Assert.assertThrows(HttpChunkedParseException.class, () -> bodyInput.readAll());
     }
@@ -358,7 +358,7 @@ public class Http1ReaderTest {
         b.close();
 
         var rawInput = createByteInput(a.bytes());
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 100);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 100);
         var bodyInput = createByteInput(byteSupplier);
 
         var data = new String(bodyInput.readAll());
@@ -376,7 +376,7 @@ public class Http1ReaderTest {
         var rawInput = createByteInput(a.bytes());
 
         // maxLength 恰好等于内容长度
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, content.length());
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, content.length());
         var bodyInput = createByteInput(byteSupplier);
 
         var data = new String(bodyInput.readAll());
@@ -387,7 +387,7 @@ public class Http1ReaderTest {
     public static void test32_zeroLengthChunkNormal() throws ScxIOException, AlreadyClosedException, NoMoreDataException, ContentLengthBodyTooLargeException {
         // 正确的 0 长度 chunk
         var rawInput = createByteInput("0\r\n\r\n".getBytes());
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 10);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 10);
         var bodyInput = createByteInput(byteSupplier);
         var data = new String(bodyInput.readAll());
         Assert.assertEquals(data, "");
@@ -401,7 +401,7 @@ public class Http1ReaderTest {
         b.write("x".getBytes());
         b.close();
         var rawInput = createByteInput(a.bytes());
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 10);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 10);
         var bodyInput = createByteInput(byteSupplier);
         var data = new String(bodyInput.readAll());
         Assert.assertEquals(data, "x");
@@ -417,7 +417,7 @@ public class Http1ReaderTest {
         b.write("defg".getBytes()); // 4 字节
         b.close();
         var rawInput = createByteInput(a.bytes());
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 10);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 10);
         var bodyInput = createByteInput(byteSupplier);
         var data = new String(bodyInput.readAll());
         Assert.assertEquals(data, "abcdefg");
@@ -427,7 +427,7 @@ public class Http1ReaderTest {
     public static void test35_fragmentedStream() throws ScxIOException, AlreadyClosedException, NoMoreDataException, ContentLengthBodyTooLargeException {
         // 模拟网络分片读取，每次只提供 1 字节
         var rawInput = createByteInput(new InputStreamByteSupplier(new ByteArrayInputStream("3\r\nabc\r\n0\r\n\r\n".getBytes()), 1));
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 10);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 10);
         var bodyInput = createByteInput(byteSupplier);
         var data = new String(bodyInput.readAll());
         Assert.assertEquals(data, "abc");
@@ -437,7 +437,7 @@ public class Http1ReaderTest {
     public static void test36_CRLFError() throws ContentLengthBodyTooLargeException {
         // 仅 \n 而非 \r\n，应抛异常
         var rawInput = createByteInput("3\nabc\n0\n\n".getBytes());
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 10);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 10);
         var bodyInput = createByteInput(byteSupplier);
         Assert.assertThrows(HttpChunkedParseException.class, () -> bodyInput.readAll());
     }
@@ -451,7 +451,7 @@ public class Http1ReaderTest {
         b.write(content.getBytes());
         b.close();
         var rawInput = createByteInput(a.bytes());
-        var byteSupplier = Http1Reader.readBodyByteInput(new Http1Headers().transferEncoding(CHUNKED), rawInput, 20);
+        var byteSupplier = Http1Reader.createBodyByteSupplier(new Http1Headers().transferEncoding(CHUNKED), rawInput, 20);
         var bodyInput = createByteInput(byteSupplier);
         var data = new String(bodyInput.readAll());
         Assert.assertEquals(data, content);

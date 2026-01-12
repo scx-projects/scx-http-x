@@ -11,7 +11,6 @@ import dev.scx.tcp.TCPServer;
 
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
-import java.lang.System.Logger;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -21,7 +20,6 @@ import static dev.scx.http.version.HttpVersion.HTTP_1_1;
 import static dev.scx.http.version.HttpVersion.HTTP_2;
 import static dev.scx.http.x.HttpServerHelper.configServerTLS;
 import static dev.scx.http.x.SocketIOHelper.createSocketIO;
-import static java.lang.System.Logger.Level.TRACE;
 
 /// Http 服务器
 ///
@@ -31,8 +29,6 @@ import static java.lang.System.Logger.Level.TRACE;
 /// @author scx567888
 /// @version 0.0.1
 public final class HttpServer implements ScxHttpServer {
-
-    private static final Logger LOGGER = System.getLogger(HttpServer.class.getName());
 
     private final HttpServerOptions options;
     private final ScxTCPServer tcpServer;
@@ -68,7 +64,7 @@ public final class HttpServer implements ScxHttpServer {
             try {
                 tcpSocket = configServerTLS(tcpSocket, options.tls(), this::protocolSelector);
             } catch (IOException e) {
-                LOGGER.log(TRACE, "升级到 TLS 时发生错误 !!!", e);
+                // 这里的异常是 升级到 TLS 时的异常 属于噪音 无需处理.
                 return;
             }
         }
@@ -78,7 +74,7 @@ public final class HttpServer implements ScxHttpServer {
         try {
             socketIO = createSocketIO(tcpSocket);
         } catch (IOException e) {
-            // 这里的异常是是 获取 流 时异常 无需处理.
+            // 这里的异常是 获取 流 时的异常 属于噪音 无需处理.
             return;
         }
 
@@ -96,7 +92,7 @@ public final class HttpServer implements ScxHttpServer {
             http2ServerConnection.start();
         } else {
             var http1ServerConnection = new Http1ServerConnection(socketIO, options.http1ServerConnectionOptions(), requestHandler, errorHandler);
-            http1ServerConnection.start();
+            http1ServerConnection.requestNext();
         }
 
     }

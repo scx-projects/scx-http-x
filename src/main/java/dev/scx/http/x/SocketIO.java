@@ -9,6 +9,7 @@ import java.net.Socket;
 import static dev.scx.io.ScxIO.createByteInput;
 import static dev.scx.io.ScxIO.createByteOutput;
 
+/// todo 这个类 还有存在的必要吗?
 public final class SocketIO implements AutoCloseable {
 
     public final Socket tcpSocket;

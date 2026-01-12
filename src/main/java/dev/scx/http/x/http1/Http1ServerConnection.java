@@ -4,8 +4,10 @@ import dev.scx.function.Function1Void;
 import dev.scx.http.ScxHttpServerRequest;
 import dev.scx.http.error_handler.ScxHttpServerErrorHandler;
 import dev.scx.http.exception.BadRequestException;
+import dev.scx.http.media.MediaWriter;
 import dev.scx.http.method.ScxHttpMethod;
 import dev.scx.http.parameters.Parameters;
+import dev.scx.http.sender.IllegalSenderStateException;
 import dev.scx.http.x.SocketIO;
 import dev.scx.http.x.http1.headers.Http1Headers;
 import dev.scx.http.x.http1.io.*;
@@ -13,6 +15,7 @@ import dev.scx.http.x.http1.request_line.Http1RequestLine;
 import dev.scx.http.x.http1.request_line.InvalidRequestLineException;
 import dev.scx.http.x.http1.request_line.InvalidRequestLineHttpVersionException;
 import dev.scx.http.x.http1.request_line.request_target.OriginForm;
+import dev.scx.io.ByteOutput;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.NoMoreDataException;
 import dev.scx.io.exception.ScxIOException;
@@ -22,9 +25,9 @@ import java.lang.System.Logger;
 
 import static dev.scx.http.error_handler.ErrorPhase.SYSTEM;
 import static dev.scx.http.error_handler.ErrorPhase.USER;
+import static dev.scx.http.sender.ScxHttpSenderStatus.*;
 import static dev.scx.http.x.error_handler.DefaultHttpServerErrorHandler.DEFAULT_HTTP_SERVER_ERROR_HANDLER;
-import static dev.scx.http.x.http1.Http1ServerConnectionHelper.checkUpgradeRequest;
-import static dev.scx.http.x.http1.Http1ServerConnectionHelper.validateHost;
+import static dev.scx.http.x.http1.Http1ServerHelper.*;
 import static dev.scx.http.x.http1.headers.connection.Connection.CLOSE;
 import static dev.scx.http.x.http1.headers.expect.Expect.CONTINUE;
 import static dev.scx.http.x.http1.io.AutoContinueByteSupplier.sendContinue100;
@@ -41,79 +44,90 @@ public final class Http1ServerConnection {
 
     private final static Logger LOGGER = getLogger(Http1ServerConnection.class.getName());
 
-    /// 对外公开 tcpSocket 字段, 以便 实现更底层功能.
+    /// 对外公开 SocketIO 字段, 以便 实现更底层功能.
     public final SocketIO socketIO;
 
     private final Http1ServerConnectionOptions options;
     private final Function1Void<ScxHttpServerRequest, ?> requestHandler;
     private final ScxHttpServerErrorHandler errorHandler;
     private final String threadName;
-    private boolean ownsSocket; // 是否拥有 Socket
+    private boolean stopped;
 
     public Http1ServerConnection(SocketIO socketIO, Http1ServerConnectionOptions options, Function1Void<ScxHttpServerRequest, ?> requestHandler, ScxHttpServerErrorHandler errorHandler) {
         this.socketIO = socketIO;
         this.options = options;
         this.requestHandler = requestHandler;
-        this.errorHandler = errorHandler;
+        this.errorHandler = errorHandler == null ? DEFAULT_HTTP_SERVER_ERROR_HANDLER : errorHandler; // 没有就回退到默认
         this.threadName = "Http1ServerConnection-Handler-" + socketIO.tcpSocket.getRemoteSocketAddress();
-        this.ownsSocket = true;
+        this.stopped = false;
     }
 
-    /// 启动虚拟线程进行读取.
-    public void start() {
-        // 我们根据 socketIO 是否还被持有 来决定是否读取
-        if (ownsSocket) {
-            // 创建虚拟线程 处理请求
-            Thread.ofVirtual()
-                .name(threadName)
-                .start(this::handle);
-        }
-    }
-
-    /// 交接 Socket
-    public void transferSocketIO() {
-        ownsSocket = false;
-    }
-
-    private void handle() {
-        // 开始读取 Http 请求
-
-        // 1, 我们先读取请求 (只要是在 读取 Request 阶段发生错误, 我们就认为当前连接应该直接作废.)
-        ScxHttpServerRequest request;
-        try {
-            request = readRequest();
-        } catch (ScxIOException | AlreadyClosedException | NoMoreDataException e) {
-            // 如果是 IO 类异常 直接终止, 其余都不做, 甚至不打印日志 (因为完全属于干扰项).
-            socketIO.closeQuietly();
-            return;
-        } catch (Throwable e) {
-            // 其余异常, 我们尝试 响应到远端.
-            // 2, 调用系统错误处理器 (尽可能的向远端发送信息)
-            handlerSystemException(e);
-            socketIO.closeQuietly();
-            return;
+    // todo 这里注意 发送失败的时候 socket 需要 close
+    public void sendResponse(Http1ServerResponse response, MediaWriter mediaWriter) throws IllegalSenderStateException {
+        // 检查发送状态
+        if (response.senderStatus() != NOT_SENT) {
+            throw new IllegalSenderStateException(response.senderStatus());
         }
 
-        // 2, 交由用户处理器处理
+        // 处理 headers 以及获取 请求长度
+        var expectedLength = mediaWriter.beforeWrite(response.headers(), response.request().headers());
+
+        // 标记发送中
+        response._setSenderStatus(SENDING);
+
         try {
-            requestHandler.apply(request);
-        } catch (Throwable e) {
-            // 用户处理器 错误 我们尝试响应
-            handlerUserException(e, request);
+            // 1, 写入 响应行
+            Http1Writer.writeStatusLine(socketIO.out, createStatusLine(response));
+        }catch (ScxIOException|AlreadyClosedException e){
+            // 标记发送失败
+            response._setSenderStatus(FAILED);
+            // 直接终止 底层 Socket 连接
+            socketIO.closeQuietly();
+            throw e;
+        }
+
+        try {
+
+            // 2, 配置 头
+            Http1Writer.writeHeaders(socketIO.out, configResponseHeaders(response, expectedLength));
+        }catch (ScxIOException|AlreadyClosedException e){
+            // 标记发送失败
+            response._setSenderStatus(FAILED);
+            // 直接终止 底层 Socket 连接
+            socketIO.closeQuietly();
+            throw e;
+        }
+
+        // 创建 基本 输出流
+        var baseByteOutput = new Http1ServerResponseByteOutput(response,this);
+
+        // 3, 创建 byteOutput
+        ByteOutput byteOutput = Http1Writer.createBodyByteOutput(baseByteOutput,response.headers());
+
+        try {
+            mediaWriter.write(byteOutput);
+        } catch (ScxIOException e) {
+            // 标记发送失败
+            response._setSenderStatus(FAILED);
+            // 直接终止 底层 Socket 连接
+            socketIO.closeQuietly();
+            throw e;
+        } catch (AlreadyClosedException e) {
+            throw new IllegalSenderStateException(response.senderStatus());
         }
 
     }
 
     /// 读取 请求
-    private ScxHttpServerRequest readRequest() throws ScxIOException, AlreadyClosedException, NoMoreDataException, InvalidRequestLineException, InvalidRequestLineHttpVersionException, RequestLineTooLongException, HeaderTooLargeException, ContentLengthBodyTooLargeException, BadRequestException {
+    public ScxHttpServerRequest readRequest() throws ScxIOException, AlreadyClosedException, NoMoreDataException, InvalidRequestLineException, InvalidRequestLineHttpVersionException, RequestLineTooLongException, HeaderTooLargeException, ContentLengthBodyTooLargeException, BadRequestException {
         // 1, 读取 请求行
         var requestLine = Http1Reader.readRequestLine(socketIO.in, options.maxRequestLineSize());
 
         // 2, 读取 请求头
         var headers = Http1Reader.readHeaders(socketIO.in, options.maxHeaderSize());
 
-        // 3, 读取 请求体流
-        var bodyByteSupplier = Http1Reader.readBodyByteInput(headers, socketIO.in, options.maxPayloadSize());
+        // 3, 读取 请求体
+        var bodyByteSupplier = Http1Reader.createBodyByteSupplier(headers, socketIO.in, options.maxPayloadSize());
 
         // 4, 在交给用户处理器进行处理之前, 我们需要做一些预处理
 
@@ -144,29 +158,90 @@ public final class Http1ServerConnection {
         if (upgrade != null) {
             var http1UpgradeHandler = options.upgradeHandlers().get(upgrade);
             if (http1UpgradeHandler != null) {
-                return http1UpgradeHandler.createUpgradedRequest(this, requestLine, headers, bodyByteInput);
+                return http1UpgradeHandler.createUpgradedRequest(requestLine, headers, bodyByteInput, this);
             }
         }
 
         // 否则创建普通请求
-        return new Http1ServerRequest(this, requestLine, headers, bodyByteInput);
+        return new Http1ServerRequest(requestLine, headers, bodyByteInput, this);
+    }
+
+    /// 启动虚拟线程进行读取.
+    public void requestNext() {
+        // 创建虚拟线程 处理请求
+        Thread.ofVirtual()
+            .name(threadName)
+            .start(this::handle);
+    }
+
+    public void onResponseEnd(Http1ServerResponse response) {
+        // 是否是 close
+        var closeConnection = response.headers().connection() == CLOSE;
+        if (closeConnection) {
+            // 如果明确表示 close 我们终止 底层 Socket 连接
+            socketIO.closeQuietly();
+        } else {
+            // 否则继续下一次读取
+
+            // 用户处理器可能没有消费完请求体 这里我们帮助消费用户未消费的数据
+            consumeBodyByteInput(response.request().body());
+
+            if (!stopped) {
+                // 开启下一次 读取
+                requestNext();
+            }
+
+        }
+    }
+
+    /// 终止连接读取
+    public void stop() {
+        stopped = true;
+    }
+
+    private void handle() {
+        // 开始读取 Http 请求
+
+        // 1, 我们先读取请求 (只要是在 读取 Request 阶段发生错误, 我们就认为当前连接应该直接作废.)
+        ScxHttpServerRequest request;
+        try {
+            request = readRequest();
+        } catch (ScxIOException | AlreadyClosedException | NoMoreDataException e) {
+            // 如果是 IO 类异常 直接终止, 其余都不做, 甚至不打印日志 (因为完全属于干扰项).
+            socketIO.closeQuietly();
+            return;
+        } catch (Throwable e) {
+            // 其余异常, 我们尝试 响应到远端.
+            // 2, 调用系统错误处理器 (尽可能的向远端发送信息)
+            handleSystemException(e);
+            socketIO.closeQuietly();
+            return;
+        }
+
+        // 2, 交由用户处理器处理
+        try {
+            requestHandler.apply(request);
+        } catch (Throwable e) {
+            // 用户处理器 错误 我们尝试响应
+            handleUserException(e, request);
+        }
+
     }
 
     /// 处理系统级别错误
-    private void handlerSystemException(Throwable e) {
+    private void handleSystemException(Throwable e) {
+
         // 此时我们并没有拿到一个完整的 request 对象 所以这里创建一个 虚拟 request 用于后续响应
         var fakeRequest = new Http1ServerRequest(
-            this,
             new Http1RequestLine(ScxHttpMethod.of("UNKNOWN"), new OriginForm(null, Parameters.of(), null)),
             new Http1Headers().connection(CLOSE),
-            new NullByteInput()
+            new NullByteInput(),
+            this
         );
 
         // 调用错误处理器 (这里我们不保证 远端一定可用)
         try {
-            // 没有就回退到默认
-            var eh = errorHandler != null ? errorHandler : DEFAULT_HTTP_SERVER_ERROR_HANDLER;
-            eh.accept(e, fakeRequest, SYSTEM);
+            errorHandler.accept(e, fakeRequest, SYSTEM);
         } catch (Exception _) {
             // 如果错误处理器 出现异常 (比如无法发送到远端), 我们才打印 (只是 DEBUG 级别).
             LOGGER.log(DEBUG, e);
@@ -175,13 +250,11 @@ public final class Http1ServerConnection {
     }
 
     /// 处理用户级别错误
-    private void handlerUserException(Throwable e, ScxHttpServerRequest request) {
+    private void handleUserException(Throwable e, ScxHttpServerRequest request) {
 
         // 调用错误处理器 (这里我们不保证 远端一定可用)
         try {
-            // 没有就回退到默认
-            var eh = errorHandler != null ? errorHandler : DEFAULT_HTTP_SERVER_ERROR_HANDLER;
-            eh.accept(e, request, USER);
+            errorHandler.accept(e, request, USER);
         } catch (Exception ex) {
             // 如果错误处理器 出现异常 (比如无法发送到远端), 我们才打印 (只是 DEBUG 级别).
             LOGGER.log(DEBUG, e);

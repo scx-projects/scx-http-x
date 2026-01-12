@@ -16,7 +16,7 @@ public class Http2ClientConnection {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    public Http2ClientResponse waitResponse() {
+    public Http2ClientResponse readResponse() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

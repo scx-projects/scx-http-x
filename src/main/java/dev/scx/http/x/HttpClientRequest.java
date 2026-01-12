@@ -13,6 +13,7 @@ import dev.scx.http.uri.ScxURIWritable;
 import dev.scx.http.version.HttpVersion;
 import dev.scx.http.x.http1.Http1ClientConnection;
 import dev.scx.http.x.http1.Http1ClientRequest;
+import dev.scx.http.x.http1.headers.Http1Headers;
 import dev.scx.http.x.http2.Http2ClientConnection;
 import dev.scx.http.x.http2.Http2ClientRequest;
 import dev.scx.io.exception.AlreadyClosedException;
@@ -41,7 +42,7 @@ public final class HttpClientRequest implements Http1ClientRequest, Http2ClientR
     private HttpVersion[] httpVersions;
     private ScxHttpMethod method;
     private ScxURIWritable uri;
-    private ScxHttpHeadersWritable headers;
+    private Http1Headers headers;
     private boolean useProxy;
     private ScxHttpSenderStatus senderStatus;
 
@@ -52,7 +53,7 @@ public final class HttpClientRequest implements Http1ClientRequest, Http2ClientR
         this.httpVersions = httpVersions; // 空列表 表示自动协商 暂时没用到 因为现在只支持 http1.1
         this.method = GET;
         this.uri = ScxURI.of();
-        this.headers = ScxHttpHeaders.of();
+        this.headers = new Http1Headers();
         this.useProxy = false;
         this.senderStatus = ScxHttpSenderStatus.NOT_SENT;
     }
@@ -88,13 +89,13 @@ public final class HttpClientRequest implements Http1ClientRequest, Http2ClientR
         }
 
         if (useHttp2) {
-            return new Http2ClientConnection(socketIO, options.http2ClientConnectionOptions()).sendRequest(this, mediaWriter).waitResponse();
+            return new Http2ClientConnection(socketIO, options.http2ClientConnectionOptions()).sendRequest(this, mediaWriter).readResponse();
         } else {
             // 仅当 http 协议 (不是 SSL) 并且开启代理的时候才使用 绝对路径
             if (!(socketIO.tcpSocket instanceof SSLSocket) && options.proxy() != null) {
                 this.useProxy = true;
             }
-            return new Http1ClientConnection(socketIO, options.http1ClientConnectionOptions()).sendRequest(this, mediaWriter).waitResponse();
+            return new Http1ClientConnection(socketIO, options.http1ClientConnectionOptions()).sendRequest(this, mediaWriter).readResponse();
         }
 
     }
@@ -133,7 +134,7 @@ public final class HttpClientRequest implements Http1ClientRequest, Http2ClientR
     }
 
     @Override
-    public ScxHttpHeadersWritable headers() {
+    public Http1Headers headers() {
         return headers;
     }
 
@@ -151,7 +152,7 @@ public final class HttpClientRequest implements Http1ClientRequest, Http2ClientR
 
     @Override
     public ScxHttpClientRequest headers(ScxHttpHeaders headers) {
-        this.headers = ScxHttpHeaders.of(headers);
+        this.headers = new Http1Headers(headers);
         return this;
     }
 

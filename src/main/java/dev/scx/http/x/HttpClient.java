@@ -100,7 +100,7 @@ public final class HttpClient implements ScxHttpClient {
                     .uri(uri),
                 EMPTY_MEDIA_WRITER
             )
-            .waitResponse();
+            .readResponse();
 
         // 3, 握手成功
         if (proxyResponse.statusCode() != OK) {
