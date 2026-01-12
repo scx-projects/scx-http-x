@@ -18,8 +18,8 @@ import java.util.List;
 
 import static dev.scx.http.version.HttpVersion.HTTP_1_1;
 import static dev.scx.http.version.HttpVersion.HTTP_2;
-import static dev.scx.http.x.HttpServerHelper.configServerTLS;
 import static dev.scx.http.x.SocketIOHelper.createSocketIO;
+import static dev.scx.http.x.tls.TLSHelper.configServerTLS;
 
 /// Http 服务器
 ///
