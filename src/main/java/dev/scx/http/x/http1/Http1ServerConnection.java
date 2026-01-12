@@ -58,7 +58,7 @@ public final class Http1ServerConnection {
         this.stopped = false;
     }
 
-    /// 读取 请求
+    /// 读取 请求 (在发生错误时 无需关闭 socket, 上层会处理)
     public ScxHttpServerRequest readRequest() throws ScxIOException, AlreadyClosedException, NoMoreDataException, InvalidRequestLineException, InvalidRequestLineHttpVersionException, RequestLineTooLongException, HeaderTooLargeException, ContentLengthBodyTooLargeException, BadRequestException {
         // 1, 读取 请求行
         var requestLine = Http1Reader.readRequestLine(socketIO.in, options.maxRequestLineSize());

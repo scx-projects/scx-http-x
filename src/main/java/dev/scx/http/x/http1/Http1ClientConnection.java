@@ -8,15 +8,14 @@ import dev.scx.http.x.http1.io.*;
 import dev.scx.http.x.http1.status_line.InvalidStatusLineException;
 import dev.scx.http.x.http1.status_line.InvalidStatusLineHttpVersionException;
 import dev.scx.http.x.http1.status_line.InvalidStatusLineStatusCodeException;
-import dev.scx.io.ByteOutput;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.NoMoreDataException;
 import dev.scx.io.exception.ScxIOException;
 
 import static dev.scx.http.sender.ScxHttpSenderStatus.NOT_SENT;
 import static dev.scx.http.sender.ScxHttpSenderStatus.SENDING;
-import static dev.scx.http.x.http1.Http1ClientHelper.configRequestHeaders;
-import static dev.scx.http.x.http1.Http1ClientHelper.createRequestLine;
+import static dev.scx.http.x.http1.Http1ClientConnectionHelper.configRequestHeaders;
+import static dev.scx.http.x.http1.Http1ClientConnectionHelper.createRequestLine;
 import static dev.scx.io.ScxIO.createByteInput;
 import static dev.scx.io.supplier.ClosePolicyByteSupplier.noCloseDrain;
 
@@ -36,34 +35,7 @@ public final class Http1ClientConnection {
         this.options = options;
     }
 
-    public Http1ClientConnection sendRequest(Http1ClientRequest request, MediaWriter mediaWriter) throws ScxIOException, AlreadyClosedException {
-        // 检查发送状态
-        if (request.senderStatus() != NOT_SENT) {
-            throw new IllegalSenderStateException(request.senderStatus());
-        }
-
-        // 处理 headers 以及获取 请求长度
-        var expectedLength = mediaWriter.beforeWrite(request.headers(), ScxHttpHeaders.of());
-
-        // 标记发送中
-        request._setSenderStatus(SENDING);
-
-        Http1Writer.writeRequestLine(socketIO.out, createRequestLine(request));
-
-        Http1Writer.writeHeaders(socketIO.out, configRequestHeaders(request, expectedLength));
-
-        // 创建 基本 输出流
-        var baseByteOutput = new Http1ClientRequestByteOutput(request, this);
-
-        ByteOutput requestByteOutput = Http1Writer.createBodyByteOutput(baseByteOutput, request.headers());
-
-        // 调用处理器
-        mediaWriter.write(requestByteOutput);
-
-        return this;
-    }
-
-    /// 读取响应
+    /// 读取 响应
     public Http1ClientResponse readResponse() throws ScxIOException, AlreadyClosedException, NoMoreDataException, InvalidStatusLineException, StatusLineToLongException, InvalidStatusLineStatusCodeException, InvalidStatusLineHttpVersionException, HeaderTooLargeException, ContentLengthBodyTooLargeException {
         // 1, 读取 状态行
         var statusLine = Http1Reader.readStatusLine(socketIO.in, options.maxStatusLineSize());
@@ -80,6 +52,45 @@ public final class Http1ClientConnection {
         var bodyByteInput = createByteInput(noCloseDrain(bodyByteSupplier));
 
         return new Http1ClientResponse(statusLine, headers, bodyByteInput, this);
+    }
+
+    /// 发送请求
+    public Http1ClientConnection sendRequest(Http1ClientRequest request, MediaWriter mediaWriter) throws ScxIOException, AlreadyClosedException {
+        // 0, 检查发送状态
+        if (request.senderStatus() != NOT_SENT) {
+            throw new IllegalSenderStateException(request.senderStatus());
+        }
+
+        // 1, 处理 headers 以及获取 请求长度
+        var expectedLength = mediaWriter.beforeWrite(request.headers(), ScxHttpHeaders.of());
+
+        // 2, 标记发送中 (之所以在 beforeWrite 之后而不是 beforeWrite 之前, 是为了给用户 beforeWrite 失败后重试的可能)
+        request._setSenderStatus(SENDING);
+
+        // 3, 创建请求行
+        var requestLine = createRequestLine(request);
+
+        // 4, 配置头
+        var headers = configRequestHeaders(request, expectedLength);
+
+        // 5, 创建 基本 输出流
+        var baseByteOutput = new Http1ClientRequestByteOutput(request, this);
+
+        // 6, 创建 byteOutput
+        var byteOutput = Http1Writer.createBodyByteOutput(baseByteOutput, headers);
+
+        // 7, 写入远端
+
+        // 7.1 写入请求行
+        Http1Writer.writeRequestLine(socketIO.out, requestLine);
+
+        // 7.2 写入头
+        Http1Writer.writeHeaders(socketIO.out, headers);
+
+        // 7.3, 写入 body
+        mediaWriter.write(byteOutput);
+
+        return this;
     }
 
 }
