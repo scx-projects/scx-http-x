@@ -24,7 +24,7 @@ public class HttpClientTest {
             .sendGzip()
             .send("这是来自客户端的内容 😂😂😂😂😂😂😂");
 
-        var bodyStr = response.body().asGzipBody().asString();
+        var bodyStr = response.asGzipReceiver().asString();
         System.out.println("收到服务端响应:");
         System.out.println("***************************************************");
         System.out.println(response.statusCode() + " " + ((Http1ClientResponse) response).reasonPhrase());

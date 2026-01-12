@@ -10,8 +10,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.List;
 
-import static dev.scx.http.x.http1.io.Http1Writer.getDefaultPort;
-
 /// HttpClientHelper (内部工具类)
 ///
 /// @author scx567888
@@ -71,6 +69,15 @@ final class HttpClientHelper {
             port = getDefaultPort(uri.scheme());
         }
         return new InetSocketAddress(host, port);
+    }
+
+    public static int getDefaultPort(String scheme) throws IllegalArgumentException {
+        scheme = scheme.toLowerCase();
+        return switch (scheme) {
+            case "http", "ws" -> 80;
+            case "https", "wss" -> 443;
+            default -> throw new IllegalArgumentException("Unsupported scheme: " + scheme);
+        };
     }
 
 }

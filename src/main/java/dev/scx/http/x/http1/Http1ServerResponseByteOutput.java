@@ -14,12 +14,12 @@ import dev.scx.io.output.AbstractByteOutput;
 /// @version 0.0.1
 public final class Http1ServerResponseByteOutput extends AbstractByteOutput {
 
-    private final Http1ServerConnection connection;
     private final Http1ServerResponse response;
+    private final Http1ServerConnection connection;
 
-    public Http1ServerResponseByteOutput(Http1ServerConnection connection, Http1ServerResponse response) {
-        this.connection = connection;
+    public Http1ServerResponseByteOutput(Http1ServerResponse response,Http1ServerConnection connection) {
         this.response = response;
+        this.connection = connection;
     }
 
     @Override

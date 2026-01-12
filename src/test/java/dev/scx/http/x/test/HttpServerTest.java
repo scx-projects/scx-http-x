@@ -13,7 +13,7 @@ public class HttpServerTest {
     public static void test1() throws IOException {
         var httpServer = new HttpServer();
         httpServer.onRequest(request -> {
-            var bodyStr = request.body().asGzipBody().asString();
+            var bodyStr = request.asGzipReceiver().asString();
             System.out.println("收到客户端请求:");
             System.out.println("--------------------------------------------------");
             System.out.println(request.method() + " " + request.uri());

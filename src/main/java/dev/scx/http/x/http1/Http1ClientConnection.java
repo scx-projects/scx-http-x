@@ -4,19 +4,18 @@ import dev.scx.http.headers.ScxHttpHeaders;
 import dev.scx.http.media.MediaWriter;
 import dev.scx.http.sender.IllegalSenderStateException;
 import dev.scx.http.x.SocketIO;
-import dev.scx.http.x.http1.io.ContentLengthBodyTooLargeException;
-import dev.scx.http.x.http1.io.HeaderTooLargeException;
-import dev.scx.http.x.http1.io.Http1Reader;
-import dev.scx.http.x.http1.io.StatusLineToLongException;
+import dev.scx.http.x.http1.io.*;
 import dev.scx.http.x.http1.status_line.InvalidStatusLineException;
 import dev.scx.http.x.http1.status_line.InvalidStatusLineHttpVersionException;
 import dev.scx.http.x.http1.status_line.InvalidStatusLineStatusCodeException;
+import dev.scx.io.ByteOutput;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.NoMoreDataException;
 import dev.scx.io.exception.ScxIOException;
 
 import static dev.scx.http.sender.ScxHttpSenderStatus.NOT_SENT;
-import static dev.scx.http.x.http1.io.Http1Writer.sendRequestHeaders;
+import static dev.scx.http.sender.ScxHttpSenderStatus.SENDING;
+import static dev.scx.http.x.http1.Http1ClientHelper.*;
 import static dev.scx.io.ScxIO.createByteInput;
 import static dev.scx.io.supplier.ClosePolicyByteSupplier.noCloseDrain;
 
@@ -45,11 +44,17 @@ public final class Http1ClientConnection {
         // 处理 headers 以及获取 请求长度
         var expectedLength = mediaWriter.beforeWrite(request.headers(), ScxHttpHeaders.of());
 
-        // 发送头
-        var byteOutput = sendRequestHeaders(expectedLength, request, this);
+        // 标记发送中
+        request._setSenderStatus(SENDING);
+
+        Http1Writer.writeRequestLine(socketIO.out,createRequestLine(request));
+
+        Http1Writer.writeHeaders(socketIO.out,configRequestHeaders(request,expectedLength));
+
+        ByteOutput requestByteOutput = createRequestByteOutput(request, this);
 
         // 调用处理器
-        mediaWriter.write(byteOutput);
+        mediaWriter.write(requestByteOutput);
 
         return this;
     }

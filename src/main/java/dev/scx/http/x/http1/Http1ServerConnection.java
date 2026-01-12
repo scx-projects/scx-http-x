@@ -99,7 +99,7 @@ public final class Http1ServerConnection {
 
 
         // 3, 创建 byteOutput
-        ByteOutput byteOutput = createResponseByteOutput(response);
+        ByteOutput byteOutput = createResponseByteOutput(response,this);
 
         try {
             mediaWriter.write(byteOutput);

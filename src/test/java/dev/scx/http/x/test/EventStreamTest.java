@@ -33,7 +33,7 @@ public class EventStreamTest {
         httpServer.start(8080);
 
         var client = new HttpClient();
-        var eventStream = client.request().uri("http://127.0.0.1:8080").send().body().asEventStream();
+        var eventStream = client.request().uri("http://127.0.0.1:8080").send().asEventStream();
         EventClientEventStream.of(eventStream).onEvent(event -> {
             System.err.println(event.event() + " " + event.data());
         }).start();
