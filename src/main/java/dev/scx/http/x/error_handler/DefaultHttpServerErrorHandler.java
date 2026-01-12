@@ -32,7 +32,7 @@ public final class DefaultHttpServerErrorHandler implements ScxHttpServerErrorHa
     private static final Logger LOGGER = getLogger(DefaultHttpServerErrorHandler.class.getName());
 
     /// 默认 html 模板
-    private static final String HTML_TEMPLATE = """
+    public static final String HTML_TEMPLATE = """
         <!DOCTYPE html>
         <html lang="en">
         <head>
