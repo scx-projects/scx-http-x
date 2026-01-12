@@ -17,7 +17,7 @@ public final class Http1ServerResponseByteOutput extends AbstractByteOutput {
     private final Http1ServerResponse response;
     private final Http1ServerConnection connection;
 
-    public Http1ServerResponseByteOutput(Http1ServerResponse response,Http1ServerConnection connection) {
+    public Http1ServerResponseByteOutput(Http1ServerResponse response, Http1ServerConnection connection) {
         this.response = response;
         this.connection = connection;
     }

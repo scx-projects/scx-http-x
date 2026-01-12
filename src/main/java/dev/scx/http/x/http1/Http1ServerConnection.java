@@ -78,7 +78,7 @@ public final class Http1ServerConnection {
         try {
             // 1, 写入 响应行
             Http1Writer.writeStatusLine(socketIO.out, createStatusLine(response));
-        }catch (ScxIOException|AlreadyClosedException e){
+        } catch (ScxIOException | AlreadyClosedException e) {
             // 标记发送失败
             response._setSenderStatus(FAILED);
             // 直接终止 底层 Socket 连接
@@ -90,7 +90,7 @@ public final class Http1ServerConnection {
 
             // 2, 配置 头
             Http1Writer.writeHeaders(socketIO.out, configResponseHeaders(response, expectedLength));
-        }catch (ScxIOException|AlreadyClosedException e){
+        } catch (ScxIOException | AlreadyClosedException e) {
             // 标记发送失败
             response._setSenderStatus(FAILED);
             // 直接终止 底层 Socket 连接
@@ -99,10 +99,10 @@ public final class Http1ServerConnection {
         }
 
         // 创建 基本 输出流
-        var baseByteOutput = new Http1ServerResponseByteOutput(response,this);
+        var baseByteOutput = new Http1ServerResponseByteOutput(response, this);
 
         // 3, 创建 byteOutput
-        ByteOutput byteOutput = Http1Writer.createBodyByteOutput(baseByteOutput,response.headers());
+        ByteOutput byteOutput = Http1Writer.createBodyByteOutput(baseByteOutput, response.headers());
 
         try {
             mediaWriter.write(byteOutput);

@@ -3,6 +3,7 @@ package dev.scx.http.x.http2;
 import dev.scx.http.ScxHttpClientResponse;
 import dev.scx.http.headers.ScxHttpHeaders;
 import dev.scx.http.media.MediaReader;
+import dev.scx.http.peer_info.PeerInfo;
 import dev.scx.http.status_code.ScxHttpStatusCode;
 import dev.scx.http.version.HttpVersion;
 import dev.scx.io.ByteInput;
@@ -36,6 +37,16 @@ public class Http2ClientResponse implements ScxHttpClientResponse {
 
     @Override
     public <T> T as(MediaReader<T> mediaReader) throws ScxIOException, AlreadyClosedException {
+        return null;
+    }
+
+    @Override
+    public PeerInfo remotePeer() {
+        return null;
+    }
+
+    @Override
+    public PeerInfo localPeer() {
         return null;
     }
 

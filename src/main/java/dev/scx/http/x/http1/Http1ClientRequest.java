@@ -1,7 +1,6 @@
 package dev.scx.http.x.http1;
 
 import dev.scx.http.ScxHttpClientRequest;
-import dev.scx.http.headers.ScxHttpHeadersWritable;
 import dev.scx.http.sender.ScxHttpSenderStatus;
 import dev.scx.http.x.http1.headers.Http1Headers;
 
