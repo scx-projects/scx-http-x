@@ -16,7 +16,7 @@ public final class Http1ServerConnectionOptions {
     private long maxPayloadSize; // 最大请求体大小
     private boolean autoRespond100Continue; // 自动响应 100-continue
     private boolean validateHost; // 验证 Host 字段
-    private Map<ScxUpgrade, Http1UpgradeHandler<?>> upgradeHandlers; // 协议升级列表
+    private Map<ScxUpgrade, Http1UpgradeRequestFactory<?>> upgradeRequestFactories; // 协议升级列表
 
     public Http1ServerConnectionOptions() {
         this.maxRequestLineSize = 1024 * 64; // 默认 64 KB
@@ -24,7 +24,7 @@ public final class Http1ServerConnectionOptions {
         this.maxPayloadSize = 1024 * 1024 * 16; // 默认 16 MB
         this.autoRespond100Continue = true; // 默认自动响应
         this.validateHost = true; // 默认验证 Host
-        this.upgradeHandlers = new HashMap<>(); // 升级列表
+        this.upgradeRequestFactories = new HashMap<>(); // 升级列表
     }
 
     public Http1ServerConnectionOptions(Http1ServerConnectionOptions oldOptions) {
@@ -33,7 +33,7 @@ public final class Http1ServerConnectionOptions {
         maxPayloadSize(oldOptions.maxPayloadSize());
         autoRespond100Continue(oldOptions.autoRespond100Continue());
         validateHost(oldOptions.validateHost());
-        upgradeHandlers(oldOptions.upgradeHandlers());
+        upgradeRequestFactories(oldOptions.upgradeRequestFactories());
     }
 
     public int maxRequestLineSize() {
@@ -81,18 +81,18 @@ public final class Http1ServerConnectionOptions {
         return this;
     }
 
-    public Map<ScxUpgrade, Http1UpgradeHandler<?>> upgradeHandlers() {
-        return upgradeHandlers;
+    public Map<ScxUpgrade, Http1UpgradeRequestFactory<?>> upgradeRequestFactories() {
+        return upgradeRequestFactories;
     }
 
-    public Http1ServerConnectionOptions upgradeHandlers(Map<ScxUpgrade, Http1UpgradeHandler<?>> upgradeHandlers) {
-        this.upgradeHandlers = upgradeHandlers;
+    public Http1ServerConnectionOptions upgradeRequestFactories(Map<ScxUpgrade, Http1UpgradeRequestFactory<?>> upgradeRequestFactories) {
+        this.upgradeRequestFactories = new HashMap<>(upgradeRequestFactories);
         return this;
     }
 
-    public Http1ServerConnectionOptions addUpgradeHandler(Http1UpgradeHandler<?>... upgradeHandlerList) {
-        for (var http1UpgradeHandler : upgradeHandlerList) {
-            this.upgradeHandlers.put(http1UpgradeHandler.upgradeProtocol(), http1UpgradeHandler);
+    public Http1ServerConnectionOptions addUpgradeRequestFactory(Http1UpgradeRequestFactory<?>... upgradeRequestFactories) {
+        for (var upgradeRequestFactory : upgradeRequestFactories) {
+            this.upgradeRequestFactories.put(upgradeRequestFactory.upgradeProtocol(), upgradeRequestFactory);
         }
         return this;
     }
