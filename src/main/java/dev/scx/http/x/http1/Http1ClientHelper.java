@@ -68,7 +68,7 @@ final class Http1ClientHelper {
     public static Http1Headers configRequestHeaders(Http1ClientRequest request, long expectedLength) {
         var method = request.method();
         var uri=request.uri();
-        var headers=(Http1Headers)request.headers();
+        var headers= request.headers();
 
         // 处理头相关
         // 1, 处理 HOST 相关
@@ -110,22 +110,6 @@ final class Http1ClientHelper {
         }
 
         return headers;
-    }
-
-    public static ByteOutput createRequestByteOutput(Http1ClientRequest request, Http1ClientConnection connection) throws ScxIOException, AlreadyClosedException {
-
-        // 创建 基本 输出流
-        var baseByteOutput = new Http1ClientRequestByteOutput( request,connection);
-
-        // 只有明确表示 分块的时候才使用分块
-        var useChunkedTransfer = request.headers().transferEncoding() == CHUNKED;
-        var contentLength = request.headers().contentLength();
-
-        // 判断是否采用分块传输
-        return useChunkedTransfer ?
-            new HttpChunkedByteOutput(baseByteOutput) :
-            new ContentLengthByteOutput(baseByteOutput, contentLength);
-
     }
 
     /// 检查请求是否 存在请求体

@@ -51,7 +51,10 @@ public final class Http1ClientConnection {
 
         Http1Writer.writeHeaders(socketIO.out,configRequestHeaders(request,expectedLength));
 
-        ByteOutput requestByteOutput = createRequestByteOutput(request, this);
+        // 创建 基本 输出流
+        var baseByteOutput = new Http1ClientRequestByteOutput( request,this);
+
+        ByteOutput requestByteOutput = Http1Writer.createBodyByteOutput(baseByteOutput, request.headers());
 
         // 调用处理器
         mediaWriter.write(requestByteOutput);

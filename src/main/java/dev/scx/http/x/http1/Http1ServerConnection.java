@@ -98,9 +98,11 @@ public final class Http1ServerConnection {
             throw e;
         }
 
+        // 创建 基本 输出流
+        var baseByteOutput = new Http1ServerResponseByteOutput(response,this);
 
         // 3, 创建 byteOutput
-        ByteOutput byteOutput = createResponseByteOutput(response,this);
+        ByteOutput byteOutput = Http1Writer.createBodyByteOutput(baseByteOutput,response.headers());
 
         try {
             mediaWriter.write(byteOutput);

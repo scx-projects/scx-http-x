@@ -132,18 +132,4 @@ final class Http1ServerHelper {
         return headers;
     }
 
-    public static ByteOutput createResponseByteOutput(Http1ServerResponse response,Http1ServerConnection connection) {
-        // 创建 基本 输出流
-        var baseByteOutput = new Http1ServerResponseByteOutput(response,connection);
-
-        // 只有明确表示 分块的时候才使用分块
-        var useChunkedTransfer = response.headers().transferEncoding() == CHUNKED;
-        var contentLength = response.headers().contentLength();
-
-        // 判断是否采用分块传输
-        return useChunkedTransfer ?
-            new HttpChunkedByteOutput(baseByteOutput) :
-            new ContentLengthByteOutput(baseByteOutput, contentLength);
-    }
-
 }

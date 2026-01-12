@@ -44,7 +44,7 @@ public final class Http1Writer {
     }
 
 
-    public static ByteOutput createBodyByteOutput(Http1Headers headers, ByteOutput byteOutput) {
+    public static ByteOutput createBodyByteOutput( ByteOutput byteOutput,Http1Headers headers) {
 
         var transferEncoding = headers.transferEncoding();
         if (transferEncoding == CHUNKED) {
