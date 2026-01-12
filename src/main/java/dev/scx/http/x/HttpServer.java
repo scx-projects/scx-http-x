@@ -39,6 +39,8 @@ public final class HttpServer implements ScxHttpServer {
         this.options = options;
         this.tcpServer = new TCPServer(options.tcpServerOptions());
         this.tcpServer.onConnect(this::handle);
+        this.requestHandler = null;
+        this.errorHandler = null;
     }
 
     public HttpServer() {
