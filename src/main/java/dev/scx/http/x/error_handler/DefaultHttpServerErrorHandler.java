@@ -29,8 +29,6 @@ public final class DefaultHttpServerErrorHandler implements ScxHttpServerErrorHa
 
     public static final DefaultHttpServerErrorHandler DEFAULT_HTTP_SERVER_ERROR_HANDLER = new DefaultHttpServerErrorHandler(true);
 
-    private static final Logger LOGGER = getLogger(DefaultHttpServerErrorHandler.class.getName());
-
     /// 默认 html 模板
     public static final String HTML_TEMPLATE = """
         <!DOCTYPE html>
@@ -46,6 +44,8 @@ public final class DefaultHttpServerErrorHandler implements ScxHttpServerErrorHa
         </body>
         </html>
         """;
+
+    private static final Logger LOGGER = getLogger(DefaultHttpServerErrorHandler.class.getName());
 
     private final boolean useDevelopmentErrorPage;
 
@@ -79,8 +79,8 @@ public final class DefaultHttpServerErrorHandler implements ScxHttpServerErrorHa
 
     @Override
     public void accept(Throwable throwable, ScxHttpServerRequest request, ErrorPhase errorPhase) throws IllegalSenderStateException, ScxIOException, AlreadyClosedException {
-        ScxHttpStatusCode statusCode = INTERNAL_SERVER_ERROR;
-        String info = "";
+        ScxHttpStatusCode statusCode = INTERNAL_SERVER_ERROR;// 默认状态码
+        String info = ""; // 默认异常信息
         // Http 异常无需打印
         if (throwable instanceof ScxHttpException h) {
             statusCode = h.statusCode();
