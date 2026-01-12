@@ -59,7 +59,6 @@ public final class HttpServer implements ScxHttpServer {
         return null;
     }
 
-    /// 注意这里 整个 handle 是完全同步阻塞的.
     private void handle(Socket tcpSocket) {
         // 1. 处理 TLS
         if (options.tls() != null) {
