@@ -15,7 +15,6 @@ import dev.scx.http.x.http1.request_line.Http1RequestLine;
 import dev.scx.http.x.http1.request_line.InvalidRequestLineException;
 import dev.scx.http.x.http1.request_line.InvalidRequestLineHttpVersionException;
 import dev.scx.http.x.http1.request_line.request_target.OriginForm;
-import dev.scx.io.ByteOutput;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.NoMoreDataException;
 import dev.scx.io.exception.ScxIOException;
@@ -25,12 +24,12 @@ import java.lang.System.Logger;
 
 import static dev.scx.http.error_handler.ErrorPhase.SYSTEM;
 import static dev.scx.http.error_handler.ErrorPhase.USER;
-import static dev.scx.http.sender.ScxHttpSenderStatus.*;
+import static dev.scx.http.sender.ScxHttpSenderStatus.NOT_SENT;
+import static dev.scx.http.sender.ScxHttpSenderStatus.SENDING;
 import static dev.scx.http.x.error_handler.DefaultHttpServerErrorHandler.DEFAULT_HTTP_SERVER_ERROR_HANDLER;
-import static dev.scx.http.x.http1.Http1ServerHelper.*;
+import static dev.scx.http.x.http1.Http1ServerConnectionHelper.*;
 import static dev.scx.http.x.http1.headers.connection.Connection.CLOSE;
 import static dev.scx.http.x.http1.headers.expect.Expect.CONTINUE;
-import static dev.scx.http.x.http1.io.AutoContinueByteSupplier.sendContinue100;
 import static dev.scx.io.ScxIO.createByteInput;
 import static dev.scx.io.supplier.ClosePolicyByteSupplier.noCloseDrain;
 import static java.lang.System.Logger.Level.DEBUG;
@@ -50,7 +49,6 @@ public final class Http1ServerConnection {
     private final Http1ServerConnectionOptions options;
     private final Function1Void<ScxHttpServerRequest, ?> requestHandler;
     private final ScxHttpServerErrorHandler errorHandler;
-    private final String threadName;
     private boolean stopped;
 
     public Http1ServerConnection(SocketIO socketIO, Http1ServerConnectionOptions options, Function1Void<ScxHttpServerRequest, ?> requestHandler, ScxHttpServerErrorHandler errorHandler) {
@@ -58,64 +56,7 @@ public final class Http1ServerConnection {
         this.options = options;
         this.requestHandler = requestHandler;
         this.errorHandler = errorHandler == null ? DEFAULT_HTTP_SERVER_ERROR_HANDLER : errorHandler; // 没有就回退到默认
-        this.threadName = "Http1ServerConnection-Handler-" + socketIO.tcpSocket.getRemoteSocketAddress();
         this.stopped = false;
-    }
-
-    // todo 这里注意 发送失败的时候 socket 需要 close
-    public void sendResponse(Http1ServerResponse response, MediaWriter mediaWriter) throws IllegalSenderStateException {
-        // 检查发送状态
-        if (response.senderStatus() != NOT_SENT) {
-            throw new IllegalSenderStateException(response.senderStatus());
-        }
-
-        // 处理 headers 以及获取 请求长度
-        var expectedLength = mediaWriter.beforeWrite(response.headers(), response.request().headers());
-
-        // 标记发送中
-        response._setSenderStatus(SENDING);
-
-        try {
-            // 1, 写入 响应行
-            Http1Writer.writeStatusLine(socketIO.out, createStatusLine(response));
-        } catch (ScxIOException | AlreadyClosedException e) {
-            // 标记发送失败
-            response._setSenderStatus(FAILED);
-            // 直接终止 底层 Socket 连接
-            socketIO.closeQuietly();
-            throw e;
-        }
-
-        try {
-
-            // 2, 配置 头
-            Http1Writer.writeHeaders(socketIO.out, configResponseHeaders(response, expectedLength));
-        } catch (ScxIOException | AlreadyClosedException e) {
-            // 标记发送失败
-            response._setSenderStatus(FAILED);
-            // 直接终止 底层 Socket 连接
-            socketIO.closeQuietly();
-            throw e;
-        }
-
-        // 创建 基本 输出流
-        var baseByteOutput = new Http1ServerResponseByteOutput(response, this);
-
-        // 3, 创建 byteOutput
-        ByteOutput byteOutput = Http1Writer.createBodyByteOutput(baseByteOutput, response.headers());
-
-        try {
-            mediaWriter.write(byteOutput);
-        } catch (ScxIOException e) {
-            // 标记发送失败
-            response._setSenderStatus(FAILED);
-            // 直接终止 底层 Socket 连接
-            socketIO.closeQuietly();
-            throw e;
-        } catch (AlreadyClosedException e) {
-            throw new IllegalSenderStateException(response.senderStatus());
-        }
-
     }
 
     /// 读取 请求
@@ -140,7 +81,7 @@ public final class Http1ServerConnection {
         if (headers.expect() == CONTINUE) {
             // 如果启用了自动响应 我们直接发送
             if (options.autoRespond100Continue()) {
-                sendContinue100(socketIO.out);
+                Http1Writer.writeContinue100(socketIO.out);
             } else {
                 // 否则交给用户去处理
                 bodyByteSupplier = new AutoContinueByteSupplier(bodyByteSupplier, socketIO.out);
@@ -156,9 +97,9 @@ public final class Http1ServerConnection {
         var upgrade = checkUpgradeRequest(requestLine, headers);
 
         if (upgrade != null) {
-            var http1UpgradeHandler = options.upgradeHandlers().get(upgrade);
-            if (http1UpgradeHandler != null) {
-                return http1UpgradeHandler.createUpgradedRequest(requestLine, headers, bodyByteInput, this);
+            var http1UpgradeRequestFactory = options.upgradeRequestFactories().get(upgrade);
+            if (http1UpgradeRequestFactory != null) {
+                return http1UpgradeRequestFactory.createUpgradeRequest(requestLine, headers, bodyByteInput, this);
             }
         }
 
@@ -166,11 +107,46 @@ public final class Http1ServerConnection {
         return new Http1ServerRequest(requestLine, headers, bodyByteInput, this);
     }
 
+    /// 发送响应 (注意在发生错误时 关闭 socket)
+    public void sendResponse(Http1ServerResponse response, MediaWriter mediaWriter) throws IllegalSenderStateException, ScxIOException, AlreadyClosedException {
+        // 0, 检查发送状态
+        if (response.senderStatus() != NOT_SENT) {
+            throw new IllegalSenderStateException(response.senderStatus());
+        }
+
+        // 1, 处理 headers 以及获取 请求长度
+        var expectedLength = mediaWriter.beforeWrite(response.headers(), response.request().headers());
+
+        // 2, 标记发送中 (之所以在 beforeWrite 之后而不是 beforeWrite 之前, 是为了给用户 beforeWrite 失败后重试的可能)
+        response._setSenderStatus(SENDING);
+
+        // 3, 创建响应行
+        var statusLine = createStatusLine(response);
+
+        // 4, 配置头
+        var headers = configResponseHeaders(response, expectedLength);
+
+        // 5, 创建 基本 输出流
+        var baseByteOutput = new Http1ServerResponseByteOutput(response, this);
+
+        // 6, 创建 byteOutput
+        var byteOutput = Http1Writer.createBodyByteOutput(baseByteOutput, headers);
+
+        // 7, 写入 响应行
+        Http1Writer.writeStatusLine(socketIO.out, statusLine);
+
+        // 8, 写入 头
+        Http1Writer.writeHeaders(socketIO.out, headers);
+
+        // 9, 写入 body
+        mediaWriter.write(byteOutput);
+    }
+
     /// 启动虚拟线程进行读取.
     public void requestNext() {
         // 创建虚拟线程 处理请求
         Thread.ofVirtual()
-            .name(threadName)
+            .name("Http1ServerConnection-Handler-" + socketIO.tcpSocket.getRemoteSocketAddress())
             .start(this::handle);
     }
 
