@@ -3,10 +3,8 @@ package dev.scx.http.x;
 import dev.scx.http.ScxHttpClientRequest;
 import dev.scx.http.ScxHttpClientResponse;
 import dev.scx.http.headers.ScxHttpHeaders;
-import dev.scx.http.media.MediaWriter;
 import dev.scx.http.method.ScxHttpMethod;
 import dev.scx.http.sender.IllegalSenderStateException;
-import dev.scx.http.sender.ScxHttpSenderStatus;
 import dev.scx.http.uri.ScxURI;
 import dev.scx.http.uri.ScxURIWritable;
 import dev.scx.http.version.HttpVersion;
@@ -24,9 +22,9 @@ import java.net.Socket;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static dev.scx.http.method.HttpMethod.GET;
-import static dev.scx.http.sender.ScxHttpSenderStatus.NOT_SENT;
 import static dev.scx.http.version.HttpVersion.HTTP_1_1;
 import static dev.scx.http.version.HttpVersion.HTTP_2;
+import static dev.scx.http.x.ScxHttpSenderStatus.NOT_SENT;
 import static dev.scx.http.x.helper.SocketIOHelper.createSocketIO;
 
 /// 支持动态 选择协议的 Request (只支持发送一次).
@@ -54,14 +52,14 @@ public final class HttpClientRequest implements Http1ClientRequest, Http2ClientR
         this.uri = ScxURI.of();
         this.headers = new Http1Headers();
         this.useProxy = false;
-        this.senderStatus = ScxHttpSenderStatus.NOT_SENT;
+        this.senderStatus = NOT_SENT;
     }
 
-    private ScxHttpClientResponse send0(MediaWriter mediaWriter) throws IllegalSenderStateException, ScxIOException, AlreadyClosedException {
+    private ScxHttpClientResponse send0(BodyWriter bodyWriter) throws IllegalSenderStateException, ScxIOException, AlreadyClosedException {
 
         // 检查发送状态 todo 这里和 sendRequest 重复判断了
         if (senderStatus != NOT_SENT) {
-            throw new IllegalSenderStateException(senderStatus);
+            throw new IllegalSenderStateException("状态错误 : " + senderStatus);
         }
 
         Socket tcpSocket;
@@ -88,22 +86,22 @@ public final class HttpClientRequest implements Http1ClientRequest, Http2ClientR
         }
 
         if (useHttp2) {
-            return new Http2ClientConnection(socketIO, options.http2ClientConnectionOptions()).sendRequest(this, mediaWriter).readResponse();
+            return new Http2ClientConnection(socketIO, options.http2ClientConnectionOptions()).sendRequest(this, bodyWriter).readResponse();
         } else {
             // 仅当 http 协议 (不是 SSL) 并且开启代理的时候才使用 绝对路径
             if (!(socketIO.tcpSocket instanceof SSLSocket) && options.proxy() != null) {
                 this.useProxy = true;
             }
-            return new Http1ClientConnection(socketIO, options.http1ClientConnectionOptions()).sendRequest(this, mediaWriter).readResponse();
+            return new Http1ClientConnection(socketIO, options.http1ClientConnectionOptions()).sendRequest(this, bodyWriter).readResponse();
         }
 
     }
 
     @Override
-    public ScxHttpClientResponse send(MediaWriter mediaWriter) throws IllegalSenderStateException, ScxIOException, AlreadyClosedException {
+    public ScxHttpClientResponse send(BodyWriter bodyWriter) throws IllegalSenderStateException, ScxIOException, AlreadyClosedException {
         sendLock.lock();
         try {
-            return send0(mediaWriter);
+            return send0(bodyWriter);
         } finally {
             sendLock.unlock();
         }

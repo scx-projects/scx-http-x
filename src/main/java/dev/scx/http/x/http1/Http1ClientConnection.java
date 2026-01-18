@@ -1,8 +1,7 @@
 package dev.scx.http.x.http1;
 
-import dev.scx.http.headers.ScxHttpHeaders;
-import dev.scx.http.media.MediaWriter;
 import dev.scx.http.sender.IllegalSenderStateException;
+import dev.scx.http.sender.ScxHttpSender.BodyWriter;
 import dev.scx.http.x.SocketIO;
 import dev.scx.http.x.http1.io.*;
 import dev.scx.http.x.http1.status_line.InvalidStatusLineException;
@@ -12,8 +11,8 @@ import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.NoMoreDataException;
 import dev.scx.io.exception.ScxIOException;
 
-import static dev.scx.http.sender.ScxHttpSenderStatus.NOT_SENT;
-import static dev.scx.http.sender.ScxHttpSenderStatus.SENDING;
+import static dev.scx.http.x.ScxHttpSenderStatus.NOT_SENT;
+import static dev.scx.http.x.ScxHttpSenderStatus.SENDING;
 import static dev.scx.http.x.http1.Http1ClientConnectionHelper.configRequestHeaders;
 import static dev.scx.http.x.http1.Http1ClientConnectionHelper.createRequestLine;
 import static dev.scx.io.ScxIO.createByteInput;
@@ -55,14 +54,14 @@ public final class Http1ClientConnection {
     }
 
     /// 发送请求
-    public Http1ClientConnection sendRequest(Http1ClientRequest request, MediaWriter mediaWriter) throws ScxIOException, AlreadyClosedException {
+    public Http1ClientConnection sendRequest(Http1ClientRequest request, BodyWriter bodyWriter) throws ScxIOException, AlreadyClosedException {
         // 0, 检查发送状态
         if (request.senderStatus() != NOT_SENT) {
-            throw new IllegalSenderStateException(request.senderStatus());
+            throw new IllegalSenderStateException("状态错误 : " + request.senderStatus());
         }
 
         // 1, 处理 headers 以及获取 请求长度
-        var expectedLength = mediaWriter.beforeWrite(request.headers(), ScxHttpHeaders.of());
+        var bodyLength = bodyWriter.bodyLength();
 
         // 2, 标记发送中 (之所以在 beforeWrite 之后而不是 beforeWrite 之前, 是为了给用户 beforeWrite 失败后重试的可能)
         request._setSenderStatus(SENDING);
@@ -71,7 +70,7 @@ public final class Http1ClientConnection {
         var requestLine = createRequestLine(request);
 
         // 4, 配置头
-        var headers = configRequestHeaders(request, expectedLength);
+        var headers = configRequestHeaders(request, bodyLength);
 
         // 5, 创建 基本 输出流
         var baseByteOutput = new Http1ClientRequestByteOutput(request, this);
@@ -88,7 +87,7 @@ public final class Http1ClientConnection {
         Http1Writer.writeHeaders(socketIO.out, headers);
 
         // 7.3, 写入 body
-        mediaWriter.write(byteOutput);
+        bodyWriter.write(byteOutput);
 
         return this;
     }

@@ -69,7 +69,7 @@ final class Http1ServerConnectionHelper {
     }
 
     // todo 这里有点问题
-    public static Http1Headers configResponseHeaders(Http1ServerResponse response, long expectedLength) {
+    public static Http1Headers configResponseHeaders(Http1ServerResponse response, Long expectedLength) {
         var headers = response.headers();
         var statusCode = response.statusCode();
         var isKeepAlive = response.request().isKeepAlive();
@@ -86,7 +86,7 @@ final class Http1ServerConnectionHelper {
         }
 
         // 2, 处理 body 相关
-        if (expectedLength < 0) {// 表示不知道 body 的长度
+        if (expectedLength == null) {// 表示不知道 body 的长度
             // 如果用户已经手动设置了 Content-Length, 我们便不再设置 分块传输
             if (headers.contentLength() == null) {
                 headers.transferEncoding(CHUNKED);

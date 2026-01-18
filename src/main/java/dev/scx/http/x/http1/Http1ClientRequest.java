@@ -1,7 +1,7 @@
 package dev.scx.http.x.http1;
 
 import dev.scx.http.ScxHttpClientRequest;
-import dev.scx.http.sender.ScxHttpSenderStatus;
+import dev.scx.http.x.ScxHttpSenderStatus;
 import dev.scx.http.x.http1.headers.Http1Headers;
 
 /// Http1ClientRequest
@@ -12,6 +12,8 @@ public interface Http1ClientRequest extends ScxHttpClientRequest {
 
     @Override
     Http1Headers headers();
+
+    ScxHttpSenderStatus senderStatus();
 
     /// 是否正在使用代理 (内部方法 只应该由 框架 调用)
     boolean _useProxy();

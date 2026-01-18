@@ -2,18 +2,17 @@ package dev.scx.http.x.http1;
 
 import dev.scx.http.ScxHttpServerResponse;
 import dev.scx.http.headers.ScxHttpHeaders;
-import dev.scx.http.media.MediaWriter;
 import dev.scx.http.sender.IllegalSenderStateException;
-import dev.scx.http.sender.ScxHttpSenderStatus;
 import dev.scx.http.status_code.HttpStatusCode;
 import dev.scx.http.status_code.ScxHttpStatusCode;
+import dev.scx.http.x.ScxHttpSenderStatus;
 import dev.scx.http.x.http1.headers.Http1Headers;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.ScxIOException;
 
 import java.util.concurrent.locks.ReentrantLock;
 
-import static dev.scx.http.sender.ScxHttpSenderStatus.NOT_SENT;
+import static dev.scx.http.x.ScxHttpSenderStatus.NOT_SENT;
 
 /// Http1ServerResponse
 ///
@@ -78,17 +77,16 @@ public final class Http1ServerResponse implements ScxHttpServerResponse {
     }
 
     @Override
-    public Void send(MediaWriter mediaWriter) throws IllegalSenderStateException, ScxIOException, AlreadyClosedException {
+    public Void send(BodyWriter bodyWriter) throws IllegalSenderStateException, ScxIOException, AlreadyClosedException {
         sendLock.lock();
         try {
-            connection.sendResponse(this, mediaWriter);
+            connection.sendResponse(this, bodyWriter);
             return null;
         } finally {
             sendLock.unlock();
         }
     }
 
-    @Override
     public ScxHttpSenderStatus senderStatus() {
         return senderStatus;
     }

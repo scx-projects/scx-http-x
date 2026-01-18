@@ -60,7 +60,7 @@ final class Http1ClientConnectionHelper {
         return new Http1RequestLine(method, requestTarget);
     }
 
-    public static Http1Headers configRequestHeaders(Http1ClientRequest request, long expectedLength) {
+    public static Http1Headers configRequestHeaders(Http1ClientRequest request, Long expectedLength) {
         var method = request.method();
         var uri = request.uri();
         var headers = request.headers();
@@ -77,7 +77,7 @@ final class Http1ClientConnectionHelper {
         }
 
         // 2, 处理 body 相关
-        if (expectedLength < 0) {// 表示不知道 body 的长度
+        if (expectedLength == null) {// 表示不知道 body 的长度
             // 如果用户已经手动设置了 Content-Length, 我们便不再设置 分块传输
             if (headers.contentLength() == null) {
                 // todo 这里在 NullContentByteSupplier 会写入 多余的 CHUNKED 怎么处理? 问题参看代理示例

@@ -21,10 +21,10 @@ public class HttpClientTest {
             .uri("http://localhost:8899/中文路径😎😎😎😎?a=1&b=llll")
             .addHeader("a", "b")
             .method(POST)
-            .sendGzip()
+            .gzip()
             .send("这是来自客户端的内容 😂😂😂😂😂😂😂");
 
-        var bodyStr = response.asGzipReceiver().asString();
+        var bodyStr = response.gzip().asString();
         System.out.println("收到服务端响应:");
         System.out.println("***************************************************");
         System.out.println(response.statusCode() + " " + ((Http1ClientResponse) response).reasonPhrase());

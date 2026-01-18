@@ -4,10 +4,10 @@ import dev.scx.function.Function1Void;
 import dev.scx.http.ScxHttpServerRequest;
 import dev.scx.http.error_handler.ScxHttpServerErrorHandler;
 import dev.scx.http.exception.BadRequestException;
-import dev.scx.http.media.MediaWriter;
 import dev.scx.http.method.ScxHttpMethod;
 import dev.scx.http.parameters.Parameters;
 import dev.scx.http.sender.IllegalSenderStateException;
+import dev.scx.http.sender.ScxHttpSender.BodyWriter;
 import dev.scx.http.x.SocketIO;
 import dev.scx.http.x.http1.headers.Http1Headers;
 import dev.scx.http.x.http1.io.*;
@@ -24,7 +24,7 @@ import java.lang.System.Logger;
 
 import static dev.scx.http.error_handler.ErrorPhase.SYSTEM;
 import static dev.scx.http.error_handler.ErrorPhase.USER;
-import static dev.scx.http.sender.ScxHttpSenderStatus.*;
+import static dev.scx.http.x.ScxHttpSenderStatus.*;
 import static dev.scx.http.x.error_handler.DefaultHttpServerErrorHandler.DEFAULT_HTTP_SERVER_ERROR_HANDLER;
 import static dev.scx.http.x.http1.Http1ServerConnectionHelper.*;
 import static dev.scx.http.x.http1.headers.connection.Connection.CLOSE;
@@ -107,14 +107,14 @@ public final class Http1ServerConnection {
     }
 
     /// 发送响应 (注意在发生错误时 关闭 socket)
-    public void sendResponse(Http1ServerResponse response, MediaWriter mediaWriter) throws IllegalSenderStateException, ScxIOException, AlreadyClosedException {
+    public void sendResponse(Http1ServerResponse response, BodyWriter bodyWriter) throws IllegalSenderStateException, ScxIOException, AlreadyClosedException {
         // 0, 检查发送状态
         if (response.senderStatus() != NOT_SENT) {
-            throw new IllegalSenderStateException(response.senderStatus());
+            throw new IllegalSenderStateException("状态错误 : " + response.senderStatus());
         }
 
         // 1, 处理 headers 以及获取 请求长度
-        var expectedLength = mediaWriter.beforeWrite(response.headers(), response.request().headers());
+        var bodyLength = bodyWriter.bodyLength();
 
         // 2, 标记发送中 (之所以在 beforeWrite 之后而不是 beforeWrite 之前, 是为了给用户 beforeWrite 失败后重试的可能)
         response._setSenderStatus(SENDING);
@@ -123,7 +123,7 @@ public final class Http1ServerConnection {
         var statusLine = createStatusLine(response);
 
         // 4, 配置头
-        var headers = configResponseHeaders(response, expectedLength);
+        var headers = configResponseHeaders(response, bodyLength);
 
         // 5, 创建 基本 输出流
         var baseByteOutput = new Http1ServerResponseByteOutput(response, this);
@@ -140,7 +140,7 @@ public final class Http1ServerConnection {
             Http1Writer.writeHeaders(socketIO.out, headers);
 
             // 7.3, 写入 body
-            mediaWriter.write(byteOutput);
+            bodyWriter.write(byteOutput);
         } catch (RuntimeException e) {
             // 发生 任何异常 我们都需要关闭 socket. 因为无法保证数据依然处于正确协议状态
             response._setSenderStatus(FAILED);
