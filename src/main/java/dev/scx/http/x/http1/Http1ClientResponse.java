@@ -68,11 +68,6 @@ public final class Http1ClientResponse implements ScxHttpClientResponse {
     }
 
     @Override
-    public <T> T as(MediaReader<T> mediaReader) throws ScxIOException, AlreadyClosedException {
-        return mediaReader.read(body, headers);
-    }
-
-    @Override
     public PeerInfo remotePeer() {
         return remotePeer;
     }

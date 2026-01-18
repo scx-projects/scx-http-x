@@ -1,6 +1,6 @@
 package dev.scx.http.x.http1;
 
-import dev.scx.http.sender.ScxHttpSenderStatus;
+import dev.scx.http.x.ScxHttpSenderStatus;
 import dev.scx.io.ByteChunk;
 import dev.scx.io.exception.AlreadyClosedException;
 import dev.scx.io.exception.ScxIOException;
