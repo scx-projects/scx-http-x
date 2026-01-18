@@ -2,15 +2,12 @@ package dev.scx.http.x.http1;
 
 import dev.scx.http.ScxHttpClientResponse;
 import dev.scx.http.headers.ScxHttpHeaders;
-import dev.scx.http.media.MediaReader;
 import dev.scx.http.peer_info.PeerInfo;
 import dev.scx.http.status_code.ScxHttpStatusCode;
 import dev.scx.http.version.HttpVersion;
 import dev.scx.http.x.http1.headers.Http1Headers;
 import dev.scx.http.x.http1.status_line.Http1StatusLine;
 import dev.scx.io.ByteInput;
-import dev.scx.io.exception.AlreadyClosedException;
-import dev.scx.io.exception.ScxIOException;
 
 import static dev.scx.http.x.helper.PeerInfoHelper.getLocalPeer;
 import static dev.scx.http.x.helper.PeerInfoHelper.getRemotePeer;
