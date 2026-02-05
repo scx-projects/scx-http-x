@@ -17,7 +17,7 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
 /// @version 0.0.1
 public final class Http1Writer {
 
-    private static final ByteChunk CONTINUE_100_BYTES = ByteChunk.of("HTTP/1.1 100 Continue\r\n\r\n".getBytes());
+    private static final ByteChunk CONTINUE_100_BYTES = ByteChunk.of("HTTP/1.1 100 Continue\r\n\r\n".getBytes(ISO_8859_1));
 
     /// 写入 响应行 和 headers
     public static void writeStatusLineAndHeaders(ByteOutput byteOutput, Http1StatusLine statusLine, Http1Headers headers) throws IllegalArgumentException, ScxOutputException, OutputAlreadyClosedException {
@@ -30,7 +30,7 @@ public final class Http1Writer {
     /// 写入请求行 和 headers
     public static void writeRequestLineAndHeaders(ByteOutput byteOutput, Http1RequestLine requestLine, Http1Headers headers) {
         var requestLineAndHeadersStr = requestLine.encode() + "\r\n" + headers.encode() + "\r\n";
-        var requestLineAndHeadersStrBytes = requestLineAndHeadersStr.getBytes();
+        var requestLineAndHeadersStrBytes = requestLineAndHeadersStr.getBytes(ISO_8859_1);
         byteOutput.write(requestLineAndHeadersStrBytes);
         byteOutput.flush();
     }

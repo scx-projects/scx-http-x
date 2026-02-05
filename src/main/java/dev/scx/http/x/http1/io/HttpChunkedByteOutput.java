@@ -5,6 +5,8 @@ import dev.scx.io.ByteOutput;
 import dev.scx.io.exception.OutputAlreadyClosedException;
 import dev.scx.io.exception.ScxOutputException;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+
 /// HttpChunkedByteOutput
 ///
 /// HTTP/1.1 分块传输编码的输出封装
@@ -13,8 +15,8 @@ import dev.scx.io.exception.ScxOutputException;
 /// @version 0.0.1
 public final class HttpChunkedByteOutput implements ByteOutput {
 
-    private static final ByteChunk CHUNKED_END_BYTES = ByteChunk.of("0\r\n\r\n".getBytes());
-    private static final ByteChunk CRLF_BYTES = ByteChunk.of("\r\n".getBytes());
+    private static final ByteChunk CHUNKED_END_BYTES = ByteChunk.of("0\r\n\r\n".getBytes(ISO_8859_1));
+    private static final ByteChunk CRLF_BYTES = ByteChunk.of("\r\n".getBytes(ISO_8859_1));
 
     private static final byte[] HEX_DIGITS = {
         '0', '1', '2', '3', '4', '5', '6', '7',

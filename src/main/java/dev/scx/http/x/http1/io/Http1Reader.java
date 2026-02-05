@@ -18,7 +18,7 @@ import java.util.Arrays;
 
 import static dev.scx.http.headers.ScxHttpHeadersHelper.parseHeaders;
 import static dev.scx.http.x.http1.headers.transfer_encoding.TransferEncoding.CHUNKED;
-import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 
 /// 读取 HTTP/1.1 请求和响应的工具类
 ///
@@ -26,15 +26,15 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /// @version 0.0.1
 public final class Http1Reader {
 
-    private static final byte[] CRLF_BYTES = "\r\n".getBytes();
-    private static final byte[] CRLF_CRLF_BYTES = "\r\n\r\n".getBytes();
+    private static final byte[] CRLF_BYTES = "\r\n".getBytes(ISO_8859_1);
+    private static final byte[] CRLF_CRLF_BYTES = "\r\n\r\n".getBytes(ISO_8859_1);
 
     /// 读取 请求行
     public static Http1RequestLine readRequestLine(ByteInput dataReader, int maxRequestLineSize) throws ScxInputException, InputAlreadyClosedException, NoMoreDataException, RequestLineTooLongException, InvalidRequestLineException, InvalidRequestLineHttpVersionException {
         try {
             // 1, 尝试读取到 第一个 \r\n 为止
             var requestLineBytes = dataReader.readUntil(CRLF_BYTES, maxRequestLineSize);
-            var requestLineStr = new String(requestLineBytes, UTF_8);
+            var requestLineStr = new String(requestLineBytes, ISO_8859_1);
             return Http1RequestLine.of(requestLineStr);
         } catch (NoMatchFoundException e) {
             // 在指定长度内未匹配到 表示 RequestLine 过长
@@ -46,7 +46,7 @@ public final class Http1Reader {
     public static Http1StatusLine readStatusLine(ByteInput byteInput, int maxStatusLineSize) throws ScxInputException, InputAlreadyClosedException, NoMoreDataException, StatusLineToLongException, InvalidStatusLineException, InvalidStatusLineStatusCodeException, InvalidStatusLineHttpVersionException {
         try {
             var statusLineBytes = byteInput.readUntil(CRLF_BYTES, maxStatusLineSize);
-            var statusLineStr = new String(statusLineBytes);
+            var statusLineStr = new String(statusLineBytes, ISO_8859_1);
             return Http1StatusLine.of(statusLineStr);
         } catch (NoMatchFoundException e) {
             // 在指定长度内未匹配到 这里抛出响应行过大异常.
@@ -66,7 +66,7 @@ public final class Http1Reader {
 
             // 2, 尝试正常读取, 读取到 第一个 \r\n\r\n 为止
             var headerBytes = byteInput.readUntil(CRLF_CRLF_BYTES, maxHeaderSize);
-            var headerStr = new String(headerBytes, UTF_8);
+            var headerStr = new String(headerBytes, ISO_8859_1);
             return parseHeaders(new Http1Headers(), headerStr, true); // 使用严格模式解析
         } catch (NoMatchFoundException e) {
             // 在指定长度内未匹配到 表示 Heders 过大
