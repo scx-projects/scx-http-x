@@ -67,4 +67,10 @@ public final class Http1Writer {
         byteOutput.write(CONTINUE_100_BYTES);
     }
 
+    /// 写入 响应行 和 headers
+    public static void writeStatusLineAndHeaders(ByteOutput byteOutput, Http1StatusLine statusLine, Http1Headers headers) {
+        Http1Writer.writeStatusLine(byteOutput, statusLine);
+        Http1Writer.writeHeaders(byteOutput, headers);
+    }
+
 }
