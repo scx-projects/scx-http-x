@@ -9,6 +9,7 @@ import dev.scx.io.exception.OutputAlreadyClosedException;
 import dev.scx.io.exception.ScxOutputException;
 
 import static dev.scx.http.x.http1.headers.transfer_encoding.TransferEncoding.CHUNKED;
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 
 /// Http1Writer
 ///
@@ -68,9 +69,11 @@ public final class Http1Writer {
     }
 
     /// 写入 响应行 和 headers
-    public static void writeStatusLineAndHeaders(ByteOutput byteOutput, Http1StatusLine statusLine, Http1Headers headers) {
-        Http1Writer.writeStatusLine(byteOutput, statusLine);
-        Http1Writer.writeHeaders(byteOutput, headers);
+    public static void writeStatusLineAndHeaders(ByteOutput byteOutput, Http1StatusLine statusLine, Http1Headers headers) throws IllegalArgumentException, ScxOutputException, OutputAlreadyClosedException {
+        var statusLineAndHeadersStr = statusLine.encode() + "\r\n" + headers.toString() + "\r\n";
+        var statusLineAndHeadersBytes = statusLineAndHeadersStr.getBytes(ISO_8859_1);
+        byteOutput.write(statusLineAndHeadersBytes);
+        byteOutput.flush();
     }
 
 }
