@@ -70,7 +70,7 @@ public final class Http1Writer {
 
     /// 写入 响应行 和 headers
     public static void writeStatusLineAndHeaders(ByteOutput byteOutput, Http1StatusLine statusLine, Http1Headers headers) throws IllegalArgumentException, ScxOutputException, OutputAlreadyClosedException {
-        var statusLineAndHeadersStr = statusLine.encode() + "\r\n" + headers.toString() + "\r\n";
+        var statusLineAndHeadersStr = statusLine.encode() + "\r\n" + headers.encode() + "\r\n";
         var statusLineAndHeadersBytes = statusLineAndHeadersStr.getBytes(ISO_8859_1);
         byteOutput.write(statusLineAndHeadersBytes);
         byteOutput.flush();
