@@ -56,10 +56,9 @@ final class Http1StatusLineHelper {
         }
 
         var httpVersionStr = httpVersion.protocolVersion();
-        var statusCodeStr = statusCode.value() + "";
 
         // 直接拼接
-        return httpVersionStr + " " + statusCodeStr + " " + reasonPhrase;
+        return httpVersionStr + " " + statusCode.value() + " " + reasonPhrase;
     }
 
 }
