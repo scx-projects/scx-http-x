@@ -9,6 +9,7 @@ import dev.scx.io.exception.OutputAlreadyClosedException;
 import dev.scx.io.exception.ScxOutputException;
 
 import static dev.scx.http.x.http1.headers.transfer_encoding.TransferEncoding.CHUNKED;
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 
 /// Http1Writer
 ///
@@ -16,31 +17,22 @@ import static dev.scx.http.x.http1.headers.transfer_encoding.TransferEncoding.CH
 /// @version 0.0.1
 public final class Http1Writer {
 
-    private static final ByteChunk CONTINUE_100_BYTES = ByteChunk.of("HTTP/1.1 100 Continue\r\n\r\n".getBytes());
-    private static final ByteChunk CRLF_BYTES = ByteChunk.of("\r\n".getBytes());
+    private static final ByteChunk CONTINUE_100_BYTES = ByteChunk.of("HTTP/1.1 100 Continue\r\n\r\n".getBytes(ISO_8859_1));
 
-    /// 写入 请求行
-    public static void writeRequestLine(ByteOutput byteOutput, Http1RequestLine requestLine) throws IllegalArgumentException, ScxOutputException, OutputAlreadyClosedException {
-        var requestLineStr = requestLine.encode();
-        var requestLineBytes = requestLineStr.getBytes();
-        byteOutput.write(requestLineBytes);
-        byteOutput.write(CRLF_BYTES);
+    /// 写入 响应行 和 headers
+    public static void writeStatusLineAndHeaders(ByteOutput byteOutput, Http1StatusLine statusLine, Http1Headers headers) throws IllegalArgumentException, ScxOutputException, OutputAlreadyClosedException {
+        var statusLineAndHeadersStr = statusLine.encode() + "\r\n" + headers.encode() + "\r\n";
+        var statusLineAndHeadersBytes = statusLineAndHeadersStr.getBytes(ISO_8859_1);
+        byteOutput.write(statusLineAndHeadersBytes);
+        byteOutput.flush();
     }
 
-    /// 写入 响应行
-    public static void writeStatusLine(ByteOutput byteOutput, Http1StatusLine statusLine) throws IllegalArgumentException, ScxOutputException, OutputAlreadyClosedException {
-        var statusLineStr = statusLine.encode();
-        var statusLineBytes = statusLineStr.getBytes();
-        byteOutput.write(statusLineBytes);
-        byteOutput.write(CRLF_BYTES);
-    }
-
-    /// 写入 headers
-    public static void writeHeaders(ByteOutput byteOutput, Http1Headers headers) throws ScxOutputException, OutputAlreadyClosedException {
-        var headersStr = headers.encode();
-        var headersBytes = headersStr.getBytes();
-        byteOutput.write(headersBytes);
-        byteOutput.write(CRLF_BYTES);
+    /// 写入请求行 和 headers
+    public static void writeRequestLineAndHeaders(ByteOutput byteOutput, Http1RequestLine requestLine, Http1Headers headers) {
+        var requestLineAndHeadersStr = requestLine.encode() + "\r\n" + headers.encode() + "\r\n";
+        var requestLineAndHeadersStrBytes = requestLineAndHeadersStr.getBytes(ISO_8859_1);
+        byteOutput.write(requestLineAndHeadersStrBytes);
+        byteOutput.flush();
     }
 
     /// 创建 Body 输出流

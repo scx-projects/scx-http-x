@@ -105,11 +105,8 @@ public final class Http1ClientConnection {
 
         // 6, 写入远端
         try {
-            // 6.1, 写入 请求行
-            Http1Writer.writeRequestLine(socketIO.out, requestLine);
-
-            // 6.2, 写入 头
-            Http1Writer.writeHeaders(socketIO.out, headers);
+            // 6.1, 写入 请求行 和 头
+            Http1Writer.writeRequestLineAndHeaders(socketIO.out, requestLine, headers);
         } catch (Throwable e) {
             // 发生 任何异常 我们都需要关闭 socket. 因为无法保证数据依然处于正确协议状态
             request._setSenderStatus(FAILED);
@@ -118,7 +115,7 @@ public final class Http1ClientConnection {
         }
 
         try {
-            // 6.3, 写入 body
+            // 6.2, 写入 body
             bodyWriter.write(byteOutput);
         } catch (Throwable e) {
             // 发生 任何异常 我们都需要关闭 socket. 因为无法保证数据依然处于正确协议状态

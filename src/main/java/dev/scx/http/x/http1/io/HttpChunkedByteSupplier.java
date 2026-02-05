@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import static dev.scx.io.ByteChunk.EMPTY_BYTE_CHUNK;
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 
 /// 用来解析 HttpChunked 分块传输数据 (不支持 chunk extensions 和 trailer headers, 因为根本没人用)
 ///
@@ -19,7 +20,7 @@ import static dev.scx.io.ByteChunk.EMPTY_BYTE_CHUNK;
 /// @version 0.0.1
 public final class HttpChunkedByteSupplier implements HttpBodyByteSupplier {
 
-    private static final byte[] CRLF_BYTES = "\r\n".getBytes();
+    private static final byte[] CRLF_BYTES = "\r\n".getBytes(ISO_8859_1);
 
     private final ByteInput byteInput;
     private final long maxLength;
