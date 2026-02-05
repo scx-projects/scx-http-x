@@ -161,8 +161,7 @@ public final class Http1ServerConnection {
         // 6, 写入远端
         try {
             // 6.1, 写入 响应行 和 头
-            Http1Writer.writeStatusLineAndHeaders(socketIO.out, statusLine,headers);
-
+            Http1Writer.writeStatusLineAndHeaders(socketIO.out, statusLine, headers);
         } catch (Throwable e) {
             // 发生 任何异常 我们都需要关闭 socket. 因为无法保证数据依然处于正确协议状态
             response._setSenderStatus(FAILED);
