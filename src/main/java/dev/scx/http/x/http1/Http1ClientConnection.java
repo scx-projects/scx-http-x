@@ -4,7 +4,7 @@ import dev.scx.exception.ScxWrappedException;
 import dev.scx.http.sender.ScxHttpReceiveException;
 import dev.scx.http.sender.ScxHttpSendException;
 import dev.scx.http.sender.ScxHttpSender.BodyWriter;
-import dev.scx.http.x.SocketIO;
+import dev.scx.http.x.endpoint.SocketByteEndpoint;
 import dev.scx.http.x.http1.headers.Http1Headers;
 import dev.scx.http.x.http1.io.*;
 import dev.scx.http.x.http1.status_line.Http1StatusLine;
@@ -41,15 +41,15 @@ import static dev.scx.io.ScxIO.drainOnClose;
 /// @version 0.0.1
 public final class Http1ClientConnection {
 
-    /// 对外公开 tcpSocket 字段, 以便 实现更底层功能.
-    public final SocketIO socketIO;
+    /// 对外公开 endpoint 字段, 以便 实现更底层功能.
+    public final SocketByteEndpoint endpoint;
 
     private final Http1ClientConnectionOptions options;
 
     private volatile boolean stopped;
 
-    public Http1ClientConnection(SocketIO socketIO, Http1ClientConnectionOptions options) {
-        this.socketIO = socketIO;
+    public Http1ClientConnection(SocketByteEndpoint endpoint, Http1ClientConnectionOptions options) {
+        this.endpoint = endpoint;
         this.options = options;
         this.stopped = false;
     }
@@ -57,10 +57,10 @@ public final class Http1ClientConnection {
     /// 读取 响应
     private Http1ClientResponse readResponse0() throws ScxInputException, InputAlreadyClosedException, NoMoreDataException, InvalidStatusLineException, StatusLineToLongException, InvalidStatusLineStatusCodeException, InvalidStatusLineHttpVersionException, HeaderTooLargeException, ContentLengthBodyTooLargeException {
         // 1, 读取 状态行
-        var statusLine = Http1Reader.readStatusLine(socketIO.in, options.maxStatusLineSize());
+        var statusLine = Http1Reader.readStatusLine(endpoint.in, options.maxStatusLineSize());
 
         // 2, 读取 响应头
-        var headers = Http1Reader.readHeaders(socketIO.in, options.maxHeaderSize());
+        var headers = Http1Reader.readHeaders(endpoint.in, options.maxHeaderSize());
 
         // 创建一个 ByteInput, 要隔离 底层 close.
         var baseByteInput = new Http1ClientResponseByteInput(this, statusLine, headers);
@@ -80,7 +80,7 @@ public final class Http1ClientConnection {
             return readResponse0();
         } catch (Throwable e) {
             // 关闭连接
-            socketIO.closeQuietly();
+            endpoint.closeQuietly();
             throw new ScxHttpReceiveException(e);
         }
     }
@@ -106,11 +106,11 @@ public final class Http1ClientConnection {
         // 6, 写入远端
         try {
             // 6.1, 写入 请求行 和 头
-            Http1Writer.writeRequestLineAndHeaders(socketIO.out, requestLine, headers);
+            Http1Writer.writeRequestLineAndHeaders(endpoint.out, requestLine, headers);
         } catch (Throwable e) {
             // 发生 任何异常 我们都需要关闭 socket. 因为无法保证数据依然处于正确协议状态
             request._setSenderStatus(FAILED);
-            socketIO.closeQuietly();
+            endpoint.closeQuietly();
             throw new ScxHttpSendException(e);
         }
 
@@ -120,7 +120,7 @@ public final class Http1ClientConnection {
         } catch (Throwable e) {
             // 发生 任何异常 我们都需要关闭 socket. 因为无法保证数据依然处于正确协议状态
             request._setSenderStatus(FAILED);
-            socketIO.closeQuietly();
+            endpoint.closeQuietly();
             throw new ScxWrappedException(e);
         }
 
@@ -132,7 +132,7 @@ public final class Http1ClientConnection {
         // 1, 判断 是否是 close (优先级最高).
         if (headers.connection() == CLOSE) {
             // 如果是 close 我们终止 底层 Socket 连接
-            socketIO.closeQuietly();
+            endpoint.closeQuietly();
             return;
         }
 
@@ -148,7 +148,7 @@ public final class Http1ClientConnection {
         }
 
         // 我们在此处不引入任何连接池复用(保持客户端的简单性). 直接关闭.
-        socketIO.closeQuietly();
+        endpoint.closeQuietly();
     }
 
     /// 停止 连接 自动复用

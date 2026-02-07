@@ -38,8 +38,8 @@ public final class Http1ClientResponse implements ScxHttpClientResponse {
         this.bodyLength = bodyLength;
         this.body = bodyByteInput;
         this.connection = connection;
-        this.remotePeer = getRemotePeer(this.connection.socketIO.tcpSocket);
-        this.localPeer = getLocalPeer(this.connection.socketIO.tcpSocket);
+        this.remotePeer = getRemotePeer(this.connection.endpoint.socket);
+        this.localPeer = getLocalPeer(this.connection.endpoint.socket);
     }
 
     @Override

@@ -1,20 +1,20 @@
 package dev.scx.http.x.helper;
 
-import dev.scx.http.x.SocketIO;
+import dev.scx.http.x.endpoint.SocketByteEndpoint;
 
 import java.io.IOException;
 import java.net.Socket;
 
-/// SocketIOHelper
+/// SocketByteEndpointHelper
 ///
 /// @author scx567888
 /// @version 0.0.1
-public final class SocketIOHelper {
+public final class SocketByteEndpointHelper {
 
     /// 失败内部会关闭 Socket
-    public static SocketIO createSocketIO(Socket tcpSocket) throws IOException {
+    public static SocketByteEndpoint createSocketByteEndpoint(Socket tcpSocket) throws IOException {
         try {
-            return new SocketIO(tcpSocket);
+            return new SocketByteEndpoint(tcpSocket);
         } catch (IOException e) {
             try {
                 tcpSocket.close();

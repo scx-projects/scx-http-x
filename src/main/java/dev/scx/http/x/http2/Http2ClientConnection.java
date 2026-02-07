@@ -1,15 +1,15 @@
 package dev.scx.http.x.http2;
 
 import dev.scx.http.sender.ScxHttpSender.BodyWriter;
-import dev.scx.http.x.SocketIO;
+import dev.scx.http.x.endpoint.SocketByteEndpoint;
 
 /// 占位 (可能永远都不会实现)
 public class Http2ClientConnection {
 
-    private final SocketIO socketIO;
+    private final SocketByteEndpoint endpoint;
 
-    public Http2ClientConnection(SocketIO socketIO, Http2ClientConnectionOptions options) {
-        this.socketIO = socketIO;
+    public Http2ClientConnection(SocketByteEndpoint endpoint, Http2ClientConnectionOptions options) {
+        this.endpoint = endpoint;
     }
 
     public Http2ClientConnection sendRequest(Http2ClientRequest request, BodyWriter bodyWriter) {

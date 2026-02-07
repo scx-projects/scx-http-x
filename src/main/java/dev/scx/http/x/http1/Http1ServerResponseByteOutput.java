@@ -37,21 +37,21 @@ public final class Http1ServerResponseByteOutput implements ByteOutput {
     public void write(byte b) throws ScxOutputException, OutputAlreadyClosedException {
         ensureOpen();
 
-        connection.socketIO.out.write(b);
+        connection.endpoint.out.write(b);
     }
 
     @Override
     public void write(ByteChunk b) throws ScxOutputException, OutputAlreadyClosedException {
         ensureOpen();
 
-        connection.socketIO.out.write(b);
+        connection.endpoint.out.write(b);
     }
 
     @Override
     public void flush() throws ScxOutputException, OutputAlreadyClosedException {
         ensureOpen();
 
-        connection.socketIO.out.flush();
+        connection.endpoint.out.flush();
     }
 
     @Override
@@ -64,7 +64,7 @@ public final class Http1ServerResponseByteOutput implements ByteOutput {
         ensureOpen();
 
         // 这里中断 close, 改为刷新
-        connection.socketIO.out.flush();
+        connection.endpoint.out.flush();
 
         closed = true; // 只有成功关闭才算作 关闭
         response._setSenderStatus(SUCCESS);

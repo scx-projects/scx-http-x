@@ -9,6 +9,7 @@ import dev.scx.http.sender.ScxHttpSendException;
 import dev.scx.http.uri.ScxURI;
 import dev.scx.http.uri.ScxURIWritable;
 import dev.scx.http.version.HttpVersion;
+import dev.scx.http.x.endpoint.SocketByteEndpoint;
 import dev.scx.http.x.http1.Http1ClientConnection;
 import dev.scx.http.x.http1.Http1ClientRequest;
 import dev.scx.http.x.http1.headers.Http1Headers;
@@ -22,7 +23,7 @@ import java.net.Socket;
 import static dev.scx.http.method.HttpMethod.GET;
 import static dev.scx.http.version.HttpVersion.HTTP_1_1;
 import static dev.scx.http.version.HttpVersion.HTTP_2;
-import static dev.scx.http.x.helper.SocketIOHelper.createSocketIO;
+import static dev.scx.http.x.helper.SocketByteEndpointHelper.createSocketByteEndpoint;
 
 /// 支持动态 选择协议的 Request (只支持发送一次).
 ///
@@ -99,29 +100,29 @@ public final class HttpClientRequest extends AbstractHttpSender<ScxHttpClientRes
             throw new ScxHttpSendException("创建连接失败 !!!", e);
         }
 
-        SocketIO socketIO;
+        SocketByteEndpoint endpoint;
 
         try {
-            socketIO = createSocketIO(tcpSocket);
+            endpoint = createSocketByteEndpoint(tcpSocket);
         } catch (Throwable e) {
-            throw new ScxHttpSendException("创建 SocketIO 失败 !!!", e);
+            throw new ScxHttpSendException("创建 SocketByteEndpoint 失败 !!!", e);
         }
 
         var useHttp2 = false;
 
-        if (socketIO.tcpSocket instanceof SSLSocket sslSocket) {
+        if (endpoint.socket instanceof SSLSocket sslSocket) {
             var applicationProtocol = sslSocket.getApplicationProtocol();
             useHttp2 = "h2".equals(applicationProtocol);
         }
 
         if (useHttp2) {
-            return new Http2ClientConnection(socketIO, options.http2ClientConnectionOptions()).sendRequest(this, bodyWriter).readResponse();
+            return new Http2ClientConnection(endpoint, options.http2ClientConnectionOptions()).sendRequest(this, bodyWriter).readResponse();
         } else {
             // 仅当 http 协议 (不是 SSL) 并且开启代理的时候才使用 绝对路径
-            if (!(socketIO.tcpSocket instanceof SSLSocket) && options.proxy() != null) {
+            if (!(endpoint.socket instanceof SSLSocket) && options.proxy() != null) {
                 this.useProxy = true;
             }
-            return new Http1ClientConnection(socketIO, options.http1ClientConnectionOptions()).sendRequest(this, bodyWriter).readResponse();
+            return new Http1ClientConnection(endpoint, options.http1ClientConnectionOptions()).sendRequest(this, bodyWriter).readResponse();
         }
 
     }

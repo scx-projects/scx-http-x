@@ -4,6 +4,7 @@ import dev.scx.function.Function1Void;
 import dev.scx.http.ScxHttpServer;
 import dev.scx.http.ScxHttpServerRequest;
 import dev.scx.http.error_handler.ScxHttpServerErrorHandler;
+import dev.scx.http.x.endpoint.SocketByteEndpoint;
 import dev.scx.http.x.http1.Http1ServerConnection;
 import dev.scx.http.x.http2.Http2ServerConnection;
 import dev.scx.tcp.ScxTCPServer;
@@ -19,8 +20,8 @@ import java.util.List;
 
 import static dev.scx.http.version.HttpVersion.HTTP_1_1;
 import static dev.scx.http.version.HttpVersion.HTTP_2;
+import static dev.scx.http.x.helper.SocketByteEndpointHelper.createSocketByteEndpoint;
 import static dev.scx.http.x.helper.SocketHelper.configSocket;
-import static dev.scx.http.x.helper.SocketIOHelper.createSocketIO;
 import static dev.scx.http.x.helper.TLSHelper.configServerTLS;
 
 /// Http 服务器
@@ -92,10 +93,10 @@ public final class HttpServer implements ScxHttpServer {
             }
         }
 
-        // 2, 创建 SocketIO.
-        SocketIO socketIO;
+        // 2, 创建 SocketByteEndpoint.
+        SocketByteEndpoint endpoint;
         try {
-            socketIO = createSocketIO(tcpSocket);
+            endpoint = createSocketByteEndpoint(tcpSocket);
         } catch (IOException e) {
             // 这里的异常是 获取 流 时的异常 属于噪音 无需处理.
             return;
@@ -104,17 +105,17 @@ public final class HttpServer implements ScxHttpServer {
         // 3, 检测是否使用 Http2
         var useHttp2 = false;
 
-        if (socketIO.tcpSocket instanceof SSLSocket sslSocket) {
+        if (endpoint.socket instanceof SSLSocket sslSocket) {
             var applicationProtocol = sslSocket.getApplicationProtocol();
             useHttp2 = HTTP_2.alpnValue().equals(applicationProtocol);
         }
 
         // 4, 根据协议不同选择不同的连接处理器
         if (useHttp2) {
-            var http2ServerConnection = new Http2ServerConnection(socketIO, options.http2ServerConnectionOptions(), requestHandler, errorHandler);
+            var http2ServerConnection = new Http2ServerConnection(endpoint, options.http2ServerConnectionOptions(), requestHandler, errorHandler);
             http2ServerConnection.start();
         } else {
-            var http1ServerConnection = new Http1ServerConnection(socketIO, options.http1ServerConnectionOptions(), requestHandler, errorHandler);
+            var http1ServerConnection = new Http1ServerConnection(endpoint, options.http1ServerConnectionOptions(), requestHandler, errorHandler);
             http1ServerConnection.requestNext();
         }
 

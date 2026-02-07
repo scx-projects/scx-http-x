@@ -36,70 +36,70 @@ public final class Http1ServerRequestByteInput implements ByteInput {
     public byte read() throws NoMoreDataException, ScxInputException, InputAlreadyClosedException {
         ensureOpen();
 
-        return connection.socketIO.in.read();
+        return connection.endpoint.in.read();
     }
 
     @Override
     public void read(ByteConsumer byteConsumer, long maxLength) throws NoMoreDataException, ScxInputException, InputAlreadyClosedException, ScxWrappedException {
         ensureOpen();
 
-        connection.socketIO.in.read(byteConsumer, maxLength);
+        connection.endpoint.in.read(byteConsumer, maxLength);
     }
 
     @Override
     public void readUpTo(ByteConsumer byteConsumer, long length) throws NoMoreDataException, ScxInputException, InputAlreadyClosedException, ScxWrappedException {
         ensureOpen();
 
-        connection.socketIO.in.readUpTo(byteConsumer, length);
+        connection.endpoint.in.readUpTo(byteConsumer, length);
     }
 
     @Override
     public void readFully(ByteConsumer byteConsumer, long length) throws NoMoreDataException, ScxInputException, InputAlreadyClosedException, ScxWrappedException {
         ensureOpen();
 
-        connection.socketIO.in.readFully(byteConsumer, length);
+        connection.endpoint.in.readFully(byteConsumer, length);
     }
 
     @Override
     public byte peek() throws NoMoreDataException, ScxInputException, InputAlreadyClosedException {
         ensureOpen();
 
-        return connection.socketIO.in.peek();
+        return connection.endpoint.in.peek();
     }
 
     @Override
     public void peek(ByteConsumer byteConsumer, long maxLength) throws NoMoreDataException, ScxInputException, InputAlreadyClosedException, ScxWrappedException {
         ensureOpen();
 
-        connection.socketIO.in.peek(byteConsumer, maxLength);
+        connection.endpoint.in.peek(byteConsumer, maxLength);
     }
 
     @Override
     public void peekUpTo(ByteConsumer byteConsumer, long length) throws NoMoreDataException, ScxInputException, InputAlreadyClosedException, ScxWrappedException {
         ensureOpen();
 
-        connection.socketIO.in.peekUpTo(byteConsumer, length);
+        connection.endpoint.in.peekUpTo(byteConsumer, length);
     }
 
     @Override
     public void peekFully(ByteConsumer byteConsumer, long length) throws NoMoreDataException, ScxInputException, InputAlreadyClosedException, ScxWrappedException {
         ensureOpen();
 
-        connection.socketIO.in.peekFully(byteConsumer, length);
+        connection.endpoint.in.peekFully(byteConsumer, length);
     }
 
     @Override
     public ByteMatchResult indexOf(ByteIndexer indexer, long maxLength) throws NoMatchFoundException, NoMoreDataException, ScxInputException, InputAlreadyClosedException {
         ensureOpen();
 
-        return connection.socketIO.in.indexOf(indexer, maxLength);
+        return connection.endpoint.in.indexOf(indexer, maxLength);
     }
 
     @Override
     public ByteInputMark mark() throws InputAlreadyClosedException {
         ensureOpen();
 
-        return connection.socketIO.in.mark();
+        return connection.endpoint.in.mark();
     }
 
     @Override

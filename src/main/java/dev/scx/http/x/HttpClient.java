@@ -20,7 +20,7 @@ import static dev.scx.http.status_code.HttpStatusCode.OK;
 import static dev.scx.http.version.HttpVersion.HTTP_1_1;
 import static dev.scx.http.x.helper.SchemeHelper.isTLS;
 import static dev.scx.http.x.helper.ScxURIHelper.toRemoteAddress;
-import static dev.scx.http.x.helper.SocketIOHelper.createSocketIO;
+import static dev.scx.http.x.helper.SocketByteEndpointHelper.createSocketByteEndpoint;
 import static dev.scx.http.x.helper.TLSHelper.configClientTLS;
 
 /// HttpClient
@@ -110,10 +110,10 @@ public final class HttpClient implements ScxHttpClient {
         // 1, 我们明文连接代理地址
         var tcpSocket = createPlainSocketWithProxy();
 
-        var socketIO = createSocketIO(tcpSocket);
+        var endpoint = createSocketByteEndpoint(tcpSocket);
 
         // 2, 和代理服务器 握手 (Http1ClientConnection 保证不存在资源泄漏)
-        var proxyResponse = new Http1ClientConnection(socketIO, options.http1ClientConnectionOptions())
+        var proxyResponse = new Http1ClientConnection(endpoint, options.http1ClientConnectionOptions())
             .sendRequest(
                 (HttpClientRequest) new HttpClientRequest(this, HTTP_1_1)
                     .method(CONNECT)
@@ -128,14 +128,14 @@ public final class HttpClient implements ScxHttpClient {
         try {
             str = proxyResponse.asString();
         } catch (Throwable e) {
-            socketIO.closeQuietly();
+            endpoint.closeQuietly();
             throw new IOException("Failed to read proxy response", e);
         }
 
         // 4, 检查握手是否成功
         if (proxyResponse.statusCode() != OK) {
             // 失败需要关闭连接
-            socketIO.closeQuietly();
+            endpoint.closeQuietly();
             throw new IOException("代理拒绝连接 : " + proxyResponse.statusCode() + " 响应 : " + str);
         }
 
