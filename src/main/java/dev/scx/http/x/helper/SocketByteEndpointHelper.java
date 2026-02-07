@@ -5,7 +5,7 @@ import dev.scx.http.x.endpoint.SocketByteEndpoint;
 import java.io.IOException;
 import java.net.Socket;
 
-/// SocketIOHelper
+/// SocketByteEndpointHelper
 ///
 /// @author scx567888
 /// @version 0.0.1

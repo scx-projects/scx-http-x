@@ -105,7 +105,7 @@ public final class HttpClientRequest extends AbstractHttpSender<ScxHttpClientRes
         try {
             endpoint = createSocketByteEndpoint(tcpSocket);
         } catch (Throwable e) {
-            throw new ScxHttpSendException("创建 SocketIO 失败 !!!", e);
+            throw new ScxHttpSendException("创建 SocketByteEndpoint 失败 !!!", e);
         }
 
         var useHttp2 = false;

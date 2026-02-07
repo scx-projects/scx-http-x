@@ -74,7 +74,7 @@ public final class Http1ServerConnection {
 
     private final static Logger LOGGER = getLogger(Http1ServerConnection.class.getName());
 
-    /// 对外公开 SocketIO 字段, 以便 实现更底层功能.
+    /// 对外公开 endpoint 字段, 以便 实现更底层功能.
     public final SocketByteEndpoint endpoint;
 
     private final Http1ServerConnectionOptions options;

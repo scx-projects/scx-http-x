@@ -41,7 +41,7 @@ import static dev.scx.io.ScxIO.drainOnClose;
 /// @version 0.0.1
 public final class Http1ClientConnection {
 
-    /// 对外公开 tcpSocket 字段, 以便 实现更底层功能.
+    /// 对外公开 endpoint 字段, 以便 实现更底层功能.
     public final SocketByteEndpoint endpoint;
 
     private final Http1ClientConnectionOptions options;
