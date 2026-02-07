@@ -36,13 +36,17 @@ public final class SocketByteEndpoint implements ByteEndpoint {
         return out;
     }
 
-    public Socket socket() {
-        return socket;
-    }
-
     @Override
     public void close() throws IOException {
         this.socket.close();
+    }
+
+    public void closeQuietly() {
+        try {
+            this.close();
+        } catch (IOException _) {
+            // 忽略关闭的异常
+        }
     }
 
 }
