@@ -41,7 +41,7 @@ public class HttpProxyServerTest {
                 //2, 交接 Socket 所有权
                 serverConnection.stop();
                 //3, 获取 当前连接的 底层 tcpSocket 内容
-                var serverTCPSocket = serverConnection.socketByteEndpoint.socket;
+                var serverTCPSocket = serverConnection.endpoint.socket;
                 //4, 创建 远端连接
                 var tcpClient = new TCPClient();
                 Socket clientTCPSocket;
