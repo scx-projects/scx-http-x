@@ -100,29 +100,29 @@ public final class HttpClientRequest extends AbstractHttpSender<ScxHttpClientRes
             throw new ScxHttpSendException("创建连接失败 !!!", e);
         }
 
-        SocketByteEndpoint socketByteEndpoint;
+        SocketByteEndpoint endpoint;
 
         try {
-            socketByteEndpoint = createSocketByteEndpoint(tcpSocket);
+            endpoint = createSocketByteEndpoint(tcpSocket);
         } catch (Throwable e) {
             throw new ScxHttpSendException("创建 SocketIO 失败 !!!", e);
         }
 
         var useHttp2 = false;
 
-        if (socketByteEndpoint.socket instanceof SSLSocket sslSocket) {
+        if (endpoint.socket instanceof SSLSocket sslSocket) {
             var applicationProtocol = sslSocket.getApplicationProtocol();
             useHttp2 = "h2".equals(applicationProtocol);
         }
 
         if (useHttp2) {
-            return new Http2ClientConnection(socketByteEndpoint, options.http2ClientConnectionOptions()).sendRequest(this, bodyWriter).readResponse();
+            return new Http2ClientConnection(endpoint, options.http2ClientConnectionOptions()).sendRequest(this, bodyWriter).readResponse();
         } else {
             // 仅当 http 协议 (不是 SSL) 并且开启代理的时候才使用 绝对路径
-            if (!(socketByteEndpoint.socket instanceof SSLSocket) && options.proxy() != null) {
+            if (!(endpoint.socket instanceof SSLSocket) && options.proxy() != null) {
                 this.useProxy = true;
             }
-            return new Http1ClientConnection(socketByteEndpoint, options.http1ClientConnectionOptions()).sendRequest(this, bodyWriter).readResponse();
+            return new Http1ClientConnection(endpoint, options.http1ClientConnectionOptions()).sendRequest(this, bodyWriter).readResponse();
         }
 
     }

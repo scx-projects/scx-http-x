@@ -6,10 +6,10 @@ import dev.scx.http.x.endpoint.SocketByteEndpoint;
 /// 占位 (可能永远都不会实现)
 public class Http2ClientConnection {
 
-    private final SocketByteEndpoint socketByteEndpoint;
+    private final SocketByteEndpoint endpoint;
 
-    public Http2ClientConnection(SocketByteEndpoint socketByteEndpoint, Http2ClientConnectionOptions options) {
-        this.socketByteEndpoint = socketByteEndpoint;
+    public Http2ClientConnection(SocketByteEndpoint endpoint, Http2ClientConnectionOptions options) {
+        this.endpoint = endpoint;
     }
 
     public Http2ClientConnection sendRequest(Http2ClientRequest request, BodyWriter bodyWriter) {

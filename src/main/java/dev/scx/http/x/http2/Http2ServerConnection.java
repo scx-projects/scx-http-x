@@ -8,10 +8,10 @@ import dev.scx.http.x.endpoint.SocketByteEndpoint;
 /// 占位 (可能永远都不会实现)
 public class Http2ServerConnection {
 
-    private final SocketByteEndpoint socketByteEndpoint;
+    private final SocketByteEndpoint endpoint;
 
-    public Http2ServerConnection(SocketByteEndpoint socketByteEndpoint, Http2ServerConnectionOptions options, Function1Void<ScxHttpServerRequest, ?> requestHandler, ScxHttpServerErrorHandler errorHandler) {
-        this.socketByteEndpoint = socketByteEndpoint;
+    public Http2ServerConnection(SocketByteEndpoint endpoint, Http2ServerConnectionOptions options, Function1Void<ScxHttpServerRequest, ?> requestHandler, ScxHttpServerErrorHandler errorHandler) {
+        this.endpoint = endpoint;
     }
 
     public void start() {

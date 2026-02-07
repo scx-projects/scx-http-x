@@ -94,9 +94,9 @@ public final class HttpServer implements ScxHttpServer {
         }
 
         // 2, 创建 SocketByteEndpoint.
-        SocketByteEndpoint socketByteEndpoint;
+        SocketByteEndpoint endpoint;
         try {
-            socketByteEndpoint = createSocketByteEndpoint(tcpSocket);
+            endpoint = createSocketByteEndpoint(tcpSocket);
         } catch (IOException e) {
             // 这里的异常是 获取 流 时的异常 属于噪音 无需处理.
             return;
@@ -105,17 +105,17 @@ public final class HttpServer implements ScxHttpServer {
         // 3, 检测是否使用 Http2
         var useHttp2 = false;
 
-        if (socketByteEndpoint.socket instanceof SSLSocket sslSocket) {
+        if (endpoint.socket instanceof SSLSocket sslSocket) {
             var applicationProtocol = sslSocket.getApplicationProtocol();
             useHttp2 = HTTP_2.alpnValue().equals(applicationProtocol);
         }
 
         // 4, 根据协议不同选择不同的连接处理器
         if (useHttp2) {
-            var http2ServerConnection = new Http2ServerConnection(socketByteEndpoint, options.http2ServerConnectionOptions(), requestHandler, errorHandler);
+            var http2ServerConnection = new Http2ServerConnection(endpoint, options.http2ServerConnectionOptions(), requestHandler, errorHandler);
             http2ServerConnection.start();
         } else {
-            var http1ServerConnection = new Http1ServerConnection(socketByteEndpoint, options.http1ServerConnectionOptions(), requestHandler, errorHandler);
+            var http1ServerConnection = new Http1ServerConnection(endpoint, options.http1ServerConnectionOptions(), requestHandler, errorHandler);
             http1ServerConnection.requestNext();
         }
 
