@@ -68,8 +68,8 @@ public final class Http1Reader {
             var headerStr = new String(headerBytes, ISO_8859_1);
             return parseHeaders(new Http1Headers(), headerStr, true); // 使用严格模式解析
         } catch (NoMatchFoundException e) {
-            // 在指定长度内未匹配到 表示 Heders 过大
-            throw new HeaderTooLargeException("Heders 过大 !!!");
+            // 在指定长度内未匹配到 表示 Headers 过大
+            throw new HeaderTooLargeException("Headers 过大 !!!");
         }
     }
 
