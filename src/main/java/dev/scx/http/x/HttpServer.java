@@ -78,7 +78,7 @@ public final class HttpServer implements ScxHttpServer {
         try {
             configSocket(tcpSocket, options().tcpNoDelay());
         } catch (SocketException e) {
-            // 这里的配置 的异常 属于噪音 无需处理.
+            // 这里配置时产生的异常 属于噪音 无需处理.
             return;
         }
 

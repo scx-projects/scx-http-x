@@ -39,7 +39,7 @@ public final class ContentLengthByteSupplier implements HttpBodyByteSupplier {
             remaining -= byteChunk.length;
             return byteChunk;
         } catch (NoMoreDataException e) {
-            // 如果底层 ByteInput 没数据了, 但是还仍为填满 contentLength 则抛出异常
+            // 如果底层 ByteInput 没数据了, 但是仍未填满 contentLength 则抛出异常
             if (remaining > 0) {
                 throw new ContentLengthBodyTooShortException("Content-Length : " + contentLength + ", Body-Length : " + (contentLength - remaining));
             }
