@@ -6,8 +6,8 @@ package dev.scx.http.x.http1;
 public final class Http1ClientConnectionOptions {
 
     private int maxStatusLineSize; // 最大响应行大小
-    private int maxHeaderSize; // 最大请求头大小
-    private long maxPayloadSize; // 最大请求体大小
+    private int maxHeaderSize; // 最大响应头大小
+    private long maxPayloadSize; // 最大响应体大小
 
     public Http1ClientConnectionOptions() {
         this.maxStatusLineSize = 1024 * 64; // 默认 64 KB
