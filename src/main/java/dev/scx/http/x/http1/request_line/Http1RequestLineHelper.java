@@ -21,7 +21,7 @@ final class Http1RequestLineHelper {
 
         // 如果长度等于 2, 则可能是 HTTP/0.9 请求
         // 如果长度大于 3, 则可能是 路径中包含意外的空格
-        // 但是此处我们没必要细化异常 全部抛出 InvalidHttpRequestLineException 异常
+        // 但是此处我们没必要细化异常 全部抛出 InvalidRequestLineException 异常
         if (parts.length != 3) {
             throw new InvalidRequestLineException(requestLineStr);
         }
