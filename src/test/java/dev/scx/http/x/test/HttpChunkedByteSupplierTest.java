@@ -24,7 +24,7 @@ public class HttpChunkedByteSupplierTest {
         byte[] mockData = ("4\r\nWiki\r\n3\r\nHel\r\n7\r\nloWorld\r\n0\r\n\r\n").getBytes();
         var byteArrayByteReader = createByteInput(new ByteArrayByteSupplier(mockData));
 
-        // 创建 HttpChunkedDataSupplier 实例
+        // 创建 HttpChunkedByteSupplier 实例
         HttpChunkedByteSupplier supplier = new HttpChunkedByteSupplier(byteArrayByteReader);
 
         var byteInput = createByteInput(supplier);
@@ -40,7 +40,7 @@ public class HttpChunkedByteSupplierTest {
         byte[] mockData = ("4\r\nWiki\r\n3\r\nHel\r\n7\r\nloWorld\r\n0\r\n\r").getBytes();
         var byteArrayByteReader = createByteInput(new ByteArrayByteSupplier(mockData));
 
-        // 创建 HttpChunkedDataSupplier 实例
+        // 创建 HttpChunkedByteSupplier 实例
         HttpChunkedByteSupplier supplier = new HttpChunkedByteSupplier(byteArrayByteReader);
 
         var byteInput = createByteInput(supplier);
@@ -62,7 +62,7 @@ public class HttpChunkedByteSupplierTest {
         byte[] mockData = ("4\r\nWiki\r\n3\r\nHel\r\n7\r\nloWorld\r\n0\r\n???\r\n").getBytes();
         var byteArrayByteReader = createByteInput(new ByteArrayByteSupplier(mockData));
 
-        // 创建 HttpChunkedDataSupplier 实例
+        // 创建 HttpChunkedByteSupplier 实例
         HttpChunkedByteSupplier supplier = new HttpChunkedByteSupplier(byteArrayByteReader);
 
         var byteInput = createByteInput(supplier);
@@ -84,7 +84,7 @@ public class HttpChunkedByteSupplierTest {
         byte[] mockData = ("4\r\nWiki\r\n?\r\nHel\r\n7\r\nloWorld\r\n0\r\n\r\n").getBytes();
         var byteArrayByteReader = createByteInput(new ByteArrayByteSupplier(mockData));
 
-        // 创建 HttpChunkedDataSupplier 实例
+        // 创建 HttpChunkedByteSupplier 实例
         HttpChunkedByteSupplier supplier = new HttpChunkedByteSupplier(byteArrayByteReader);
 
         var byteInput = createByteInput(supplier);
