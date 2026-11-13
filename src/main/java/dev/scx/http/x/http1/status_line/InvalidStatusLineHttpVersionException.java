@@ -1,6 +1,6 @@
 package dev.scx.http.x.http1.status_line;
 
-/// InvalidStatusLineVersionException
+/// InvalidStatusLineHttpVersionException
 ///
 /// StatusLine 中非法 Version 异常, 表示 Version 段不正确.
 ///
