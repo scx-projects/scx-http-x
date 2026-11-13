@@ -58,7 +58,7 @@ public final class Http1ClientConnection {
     }
 
     /// 读取 响应
-    private Http1ClientResponse readResponse0(Http1RequestLine requestLine) throws ScxInputException, InputAlreadyClosedException, NoMoreDataException, InvalidStatusLineException, StatusLineToLongException, InvalidStatusLineStatusCodeException, InvalidStatusLineHttpVersionException, HeaderTooLargeException, ContentLengthBodyTooLargeException {
+    private Http1ClientResponse readResponse0(Http1RequestLine requestLine) throws ScxInputException, InputAlreadyClosedException, NoMoreDataException, InvalidStatusLineException, StatusLineTooLongException, InvalidStatusLineStatusCodeException, InvalidStatusLineHttpVersionException, HeaderTooLargeException, ContentLengthBodyTooLargeException {
         // 1, 读取 状态行
         var statusLine = Http1Reader.readStatusLine(endpoint.in, options.maxStatusLineSize());
 

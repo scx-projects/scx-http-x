@@ -193,7 +193,7 @@ public class Http1ReaderTest {
         rawInput.close();
         var byteSupplier = Http1Reader.createBodyByteSupplier((Http1Headers) new Http1Headers().contentLength(10), rawInput, 9999);
         var bodyInput = createByteInput(byteSupplier);
-        // 这里应该直接 ScxIOException 异常
+        // 这里应该直接 ScxInputException 异常
         Assert.assertThrows(ScxInputException.class, () -> {
             var bodyStr = new String(bodyInput.readAll());
         });

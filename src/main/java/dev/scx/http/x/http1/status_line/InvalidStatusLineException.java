@@ -1,6 +1,6 @@
 package dev.scx.http.x.http1.status_line;
 
-/// InvalidHttpStatusLineException
+/// InvalidStatusLineException
 ///
 /// 非法响应行异常, 表示整个 StatusLine 不正确.
 ///

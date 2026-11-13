@@ -42,14 +42,14 @@ public final class Http1Reader {
     }
 
     /// 读取 响应行
-    public static Http1StatusLine readStatusLine(ByteInput byteInput, int maxStatusLineSize) throws ScxInputException, InputAlreadyClosedException, NoMoreDataException, StatusLineToLongException, InvalidStatusLineException, InvalidStatusLineStatusCodeException, InvalidStatusLineHttpVersionException {
+    public static Http1StatusLine readStatusLine(ByteInput byteInput, int maxStatusLineSize) throws ScxInputException, InputAlreadyClosedException, NoMoreDataException, StatusLineTooLongException, InvalidStatusLineException, InvalidStatusLineStatusCodeException, InvalidStatusLineHttpVersionException {
         try {
             var statusLineBytes = byteInput.readUntil(CRLF_BYTES, maxStatusLineSize);
             var statusLineStr = new String(statusLineBytes, ISO_8859_1);
             return Http1StatusLine.of(statusLineStr);
         } catch (NoMatchFoundException e) {
             // 在指定长度内未匹配到 这里抛出响应行过大异常.
-            throw new StatusLineToLongException("响应行过长 !!!");
+            throw new StatusLineTooLongException("响应行过长 !!!");
         }
     }
 
@@ -68,8 +68,8 @@ public final class Http1Reader {
             var headerStr = new String(headerBytes, ISO_8859_1);
             return parseHeaders(new Http1Headers(), headerStr, true); // 使用严格模式解析
         } catch (NoMatchFoundException e) {
-            // 在指定长度内未匹配到 表示 Heders 过大
-            throw new HeaderTooLargeException("Heders 过大 !!!");
+            // 在指定长度内未匹配到 表示 Headers 过大
+            throw new HeaderTooLargeException("Headers 过大 !!!");
         }
     }
 
